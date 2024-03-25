@@ -27,8 +27,9 @@ def view_sim(file, simulation_dictionary):
     ]
     steps = simulation_dictionary["steps"]
     # Agent positions
-    translations = np.array([s["agent_frame_translation"] for s in steps])
-    rotations = np.array([s["agent_frame_rotation"] for s in steps])
+    # Any one belief state space is ok for this, so we just use the firts one (0)
+    translations = np.array([s["states"][0]["frame_translation"] for s in steps])
+    rotations = np.array([s["states"][0]["frame_rotation"] for s in steps])
     is_euclidean = simulation_dictionary["params"]["gamma"] == 0
 
     # Compute world position based on rotation and translation
