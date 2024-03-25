@@ -47,6 +47,19 @@ class Simulation:
         
         return PerceptionSpace(id, frame, world, initial_beliefs)
 
+    def generate_distance_filter(self, radius):
+        def filter_too_close(idle_translation, world_translations, observations):
+            filtered = []
+            radius_sqr = radius * radius
+            for translation in world_translations:
+                vecs = [obs - idle_translation for obs in observations]
+                norms = [v[0] * v[0] + v[1] * v[1] for v in vecs]
+                if(min(norms) > radius_sqr):
+                    filtered.append(translation)
+            return filtered
+
+        return filter_too_close
+
     def _init_agent(self, params: SimParams):
         # Start with no translation
         initial_translation = np.array((0, 0))
@@ -59,11 +72,13 @@ class Simulation:
             belief_spaces.append(belief_space)
 
         # Action space, sampled for each target
+        filter = self.generate_distance_filter(params.distance_filter)
         action_space = Translation2DActionSpace(
             factory,
             translation_norm=params.norm_of_translations,
             direction_count=params.translation_direction_count,
             agent_starting_position=-initial_translation,
+            filter=filter
         )
 
         # Create loss and policy

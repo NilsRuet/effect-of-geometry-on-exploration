@@ -23,6 +23,7 @@ class SimParams:
         deltatime=1,
         max_steps=10,
         norm_of_translations=0.1,
+        distance_filter=0.15,
         direction_count=8,
         loss_epsilon=1e-4,
     ):
@@ -35,6 +36,7 @@ class SimParams:
         # Params for translation 2D action space
         self.norm_of_translations = norm_of_translations
         self.translation_direction_count = direction_count
+        self.distance_filter = distance_filter
 
         # how different from the default action the loss of an action has to be to be selected
         self.loss_epsilon = loss_epsilon

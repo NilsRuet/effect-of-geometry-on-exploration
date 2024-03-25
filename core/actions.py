@@ -134,11 +134,13 @@ class Translation2DActionSpace:
         translation_norm,
         direction_count,
         agent_starting_position,
+        filter
     ):
         self.factory = factory
         self.translation_norm = translation_norm
         self.direction_count = direction_count
         self.agent_starting_position = agent_starting_position
+        self.filter = filter
 
     def sample(
         self,
@@ -169,11 +171,13 @@ class Translation2DActionSpace:
             ]
             world_translations.extend(current_world_translations)
 
-        # TODO : check the position is the same in the world for all reference frames
         # Add the identity translation at the beginning
         single_transform = current_frame_transformations[0]
         idle_transform = np.matmul(single_transform.inverse_linear_map, single_transform.translation)
         world_translations.insert(0, idle_transform)
+
+        # Apply filter for illegal action
+        world_translations = self.filter(idle_transform, world_translations, observations)
 
         # Each translation will be applied in several reference frames
         # because the translations are synchronized, but not the rotations
