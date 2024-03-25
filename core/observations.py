@@ -10,7 +10,7 @@ class MarkovKernel:
 
 
 # Holds information about the world
-class World:
+class ObjectSensor:
     def __init__(self, object_position, noisy_sensor_kernel):
         self.markov_kernel = noisy_sensor_kernel
         self.object_position = object_position

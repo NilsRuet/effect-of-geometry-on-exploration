@@ -24,19 +24,31 @@ class ArgminWithEpsilonPolicy:
 
     def select(
         self,
-        current_transformation: ProjectiveTransformation,
-        time: float,
-        beliefs: Beliefs,
-        world_object_position: np.ndarray,
+        current_transformations: list[ProjectiveTransformation],
+        beliefs: list[Beliefs],
+        observations: list[np.ndarray],
     ):
-        random_actions, default_action_index = self.action_space.sample(
-            current_transformation, world_object_position, time
+        
+        actions_per_space, default_action_index = self.action_space.sample(
+            current_transformations, observations
         )
+        
+        # Compute beliefs and loss for each perception space
+        future_beliefs_per_space = [] # indexed by space, then action
+        loss_per_space = []
+        for i in range(len(actions_per_space)):
+            b = beliefs[i]
+            actions = actions_per_space[i]
+            future_beliefs = b.propagate_actions(actions)
+            
+            future_beliefs_per_space.append(future_beliefs)
+            loss_per_space.append(self.loss(future_beliefs))
 
-        predicted_future_beliefs = beliefs.propagate_actions(random_actions)
-        losses = self.loss(predicted_future_beliefs)
+        # convert to numpy arrays
+        future_beliefs_per_space = np.array(future_beliefs_per_space)
 
-        Logger.debug(f"losses : {losses}")
+        # combine losses by averaging
+        losses = np.average(loss_per_space, axis=0)
         best_action_index = np.argmin(losses, axis=0)
 
         # If the best loss is not at least a quantity epsilon away from the default action's loss, the default action is selected
@@ -45,9 +57,10 @@ class ArgminWithEpsilonPolicy:
             if np.abs(default_loss - losses[best_action_index]) < self.loss_epsilon:
                 best_action_index = default_action_index
 
+        
         return (
             losses,
             best_action_index,
-            random_actions[best_action_index],
-            predicted_future_beliefs[best_action_index],
+            actions_per_space[:,best_action_index],
+            future_beliefs_per_space[:,best_action_index],
         )

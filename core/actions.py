@@ -142,59 +142,72 @@ class Translation2DActionSpace:
 
     def sample(
         self,
-        current_frame_transformation: ProjectiveTransformation,
-        object_position: np.ndarray,
-        time: float,
+        current_frame_transformations: list[ProjectiveTransformation],
+        observations: list[np.ndarray]
     ):
+        # Generate angles relative to an object
         angle_delta = 2 * np.pi / self.direction_count
         potential_directions = [(i * angle_delta) for i in range(self.direction_count)]
 
-        # Current translation (in the current reference frame)
-        current_frame_translation = current_frame_transformation.translation
+        # Generate action with a translation/rotation for each belief space
+        world_translations = []
+        rotations = []
+        for observation, transformation in zip(observations, current_frame_transformations):
+            current_frame_translation = transformation.translation
 
-        # Translations can be in any direction
-        translations = [
-            self.translation_norm * -np.array((np.cos(angle), np.sin(angle)))
-            + current_frame_translation
-            for angle in potential_directions
-        ]
+            # Translations can be in any direction
+            local_translations = [
+                self.translation_norm * -np.array((np.cos(angle), np.sin(angle)))
+                + current_frame_translation
+                for angle in potential_directions
+            ]
 
+            # Convert local translations into world translations
+            current_world_translations = [
+                np.matmul(transformation.inverse_linear_map, t)
+                for t in local_translations
+            ]
+            world_translations.extend(current_world_translations)
+
+        # TODO : check the position is the same in the world for all reference frames
         # Add the identity translation at the beginning
-        translations.insert(0, current_frame_translation)
+        single_transform = current_frame_transformations[0]
+        idle_transform = np.matmul(single_transform.inverse_linear_map, single_transform.translation)
+        world_translations.insert(0, idle_transform)
 
-        # Convert translations into world translations
-        translations = [
-            np.matmul(current_frame_transformation.inverse_linear_map, t)
-            for t in translations
-        ]
+        # Each translation will be applied in several reference frames
+        # because the translations are synchronized, but not the rotations
+        new_actions = []
+        for frame_transformation, observation in zip(current_frame_transformations, observations):
+            # Generate new rotations for each new translation
+            angles = [
+                GeometryUtils.get_new_frame_rotation_angle(
+                    self.agent_starting_position, translation, observation
+                )
+                for translation in world_translations
+            ]
+            rotations = [RotationUtils.generate_rotation_matrix(a) for a in angles]
 
-        # Generate new rotations for each new translation
-        angles = [
-            GeometryUtils.get_new_frame_rotation_angle(
-                self.agent_starting_position, translation, object_position
+            # Change the frame of each translation
+            translations = [
+                np.matmul(rotation, translation)
+                for rotation, translation in zip(rotations, world_translations)
+            ]
+
+            # Create the new projections
+            new_projections = np.array(
+                [
+                    self.factory.createTransformation(rotation, translation)
+                    for rotation, translation in zip(rotations, translations)
+                ]
             )
-            for translation in translations
-        ]
-        rotations = [RotationUtils.generate_rotation_matrix(a) for a in angles]
 
-        # Change the frame of each translation
-        translations = [
-            np.matmul(rotation, translation)
-            for rotation, translation in zip(rotations, translations)
-        ]
+            actions = np.array(
+                [
+                    ProjectiveAction(frame_transformation, projection)
+                    for projection in new_projections
+                ]
+            )
+            new_actions.append(actions)
 
-        # Create the new projections
-        new_projections = np.array(
-            [
-                self.factory.createTransformation(rotation, translation)
-                for rotation, translation in zip(rotations, translations)
-            ]
-        )
-
-        actions = np.array(
-            [
-                ProjectiveAction(current_frame_transformation, projection)
-                for projection in new_projections
-            ]
-        )
-        return actions, np.int32(0)
+        return np.array(new_actions), np.int32(0)
