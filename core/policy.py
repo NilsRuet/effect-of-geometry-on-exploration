@@ -37,10 +37,11 @@ class ArgminWithEpsilonPolicy:
         # Compute beliefs and loss for each perception space
         future_beliefs_per_space = [] # indexed by space, then action
         loss_per_space = []
-        for i in range(len(actions_per_space)):
+        space_count = len(actions_per_space)
+        for i in range(space_count):
             b = beliefs[i]
             actions = actions_per_space[i]
-            future_beliefs = b.propagate_actions(actions)
+            future_beliefs = b.propagate_actions(actions, f"space {i+1}/{space_count}: ")
             
             future_beliefs_per_space.append(future_beliefs)
             loss_per_space.append(self.loss(future_beliefs))

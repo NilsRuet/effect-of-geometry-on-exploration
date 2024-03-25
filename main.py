@@ -10,6 +10,39 @@ from utils.logger import Logger
 from utils.datamanager import dataManager
 
 
+def generate_exploration_params():
+    steps = 10
+    all_params = []
+    base_norm = 0.1
+
+    distance = (
+        base_norm * steps
+    )  # Ensure the agent can't go beyond the goal
+
+    # Not equidistant
+    pos1 = np.array((0, 1)) * distance
+    pos2 = np.array((0.25, 1)) * distance
+
+    belief_space_params = [BeliefSpaceParams(target=pos1), BeliefSpaceParams(target=pos2)]
+
+    all_params.append(
+        SimParams(
+            gamma = 1,
+            belief_spaces=belief_space_params,
+            max_steps=steps,
+            norm_of_translations=base_norm
+        )
+    )
+    all_params.append(
+        SimParams(
+            gamma = 0,
+            belief_spaces=belief_space_params,
+            max_steps=steps,
+            norm_of_translations=base_norm
+        )
+    )
+    return all_params
+
 # Generate params for sims with a single object located at evenly distributed angles
 def generate_params_with_angles():
     steps = 10
@@ -96,7 +129,7 @@ def generate_grid_params():
 
 
 def main():
-    all_params = generate_params_with_angles()
+    all_params = generate_exploration_params()
     sim = Simulation()
     for i, params in enumerate(all_params):
         Logger.debug(f"### Sim {i+1} ###")

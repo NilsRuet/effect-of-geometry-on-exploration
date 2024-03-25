@@ -45,11 +45,11 @@ class Beliefs:
         self.pxy = scipy.stats.multivariate_normal(mean_xy, sigma_xy)
 
     # Computes new beliefs resulting from the given actions
-    def propagate_actions(self, actions: List[ProjectiveAction]):
+    def propagate_actions(self, actions: List[ProjectiveAction], log_prefix = ""):
         predicted_beliefs = []
         # Integrate the transformed distribution and approximate it by a gaussian distribution
         for i_action, action in enumerate(actions):
-            Logger.progress(f"Action {i_action+1}/{len(actions)}")
+            Logger.progress(f"{log_prefix}Action {i_action+1}/{len(actions)}")
             # Skip the integration if the distribution is basically a single point
             if (
                 self.qx.cov[0, 0] <= Beliefs.zero_covariance_threshold
