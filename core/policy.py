@@ -6,6 +6,7 @@ import numpy as np
 from core.actions import Translation2DActionSpace, ProjectiveTransformation
 from core.beliefs import Beliefs
 from core.loss import EpistemicLoss
+from core.states import PolicyState, ActionState
 from utils.logger import Logger
 
 
@@ -29,7 +30,7 @@ class ArgminWithEpsilonPolicy:
         observations: list[np.ndarray],
     ):
         
-        actions_per_space, default_action_index = self.action_space.sample(
+        actions_per_space, default_action_index, world_translations = self.action_space.sample(
             current_transformations, observations
         )
         
@@ -58,9 +59,11 @@ class ArgminWithEpsilonPolicy:
                 best_action_index = default_action_index
 
         
+        action_state = ActionState(best_action_index, world_translations[best_action_index])
+        policy_state = PolicyState(action_state, losses)
+
         return (
-            losses,
-            best_action_index,
+            policy_state,
             actions_per_space[:,best_action_index],
             future_beliefs_per_space[:,best_action_index],
         )

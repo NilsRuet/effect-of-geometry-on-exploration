@@ -210,4 +210,4 @@ class Translation2DActionSpace:
             )
             new_actions.append(actions)
 
-        return np.array(new_actions), np.int32(0)
+        return np.array(new_actions), np.int32(0), np.array(world_translations)

@@ -1,6 +1,7 @@
 from core.beliefs import Beliefs
 from core.frame import ReferenceFrame
 from core.observations import ObjectSensor
+from core.states import BeliefState
 from utils.logger import Logger
 
 class PerceptionSpace:
@@ -30,7 +31,7 @@ class Agent:
         beliefs = [s.beliefs for s in self.spaces]
 
         # best moves and new beliefs are indexed by space
-        losses, action_index, best_moves, new_beliefs =  self.policy.select(
+        policy_state, best_moves, new_beliefs = self.policy.select(
             frame_transformations, beliefs, observations
         )
 
@@ -50,3 +51,16 @@ class Agent:
             Logger.debug(
                 f"frame translation: {space.reference_frame.transformation.translation}"
             )
+
+        return policy_state
+
+    # for data tracking
+    def get_belief_states(self):
+        belief_space_states = []
+        for space in self.spaces:
+            rotation = space.reference_frame.transformation.linear_map
+            translation = space.reference_frame.transformation.translation
+            beliefs = space.beliefs
+            obj_position = space.observe()
+            belief_space_states.append(BeliefState(rotation, translation, beliefs, obj_position))
+        return belief_space_states

@@ -7,32 +7,41 @@ import time
 import jsonpickle
 import jsonpickle.ext.numpy as jsonpickle_np
 import os
+from core.states import BeliefState, PolicyState, ActionState
 from params import SimParams
 from utils.logger import Logger
 
 jsonpickle_np.register_handlers()
 
+class _SimBeliefData:
+    def __init__(self, belief_state: BeliefState):
+        self.frame_rotation = belief_state.rotation.tolist()
+        self.frame_translation = belief_state.translation.tolist()
+        self.beliefs_mean = belief_state.beliefs.qx.mean.tolist()
+        self.beliefs_cov = belief_state.beliefs.qx.cov.tolist()
+        self.object_pos = belief_state.obj_position.tolist()
+
+class _SimActionData:
+    def __init__(self, action: ActionState):
+        self.id = int(action.id)
+        self.translation = action.translation.tolist()
+
+class _SimPolicyData:
+    def __init__(self, policy_state: PolicyState):
+        self.losses = policy_state.losses.tolist()
+        self.chosen_action = _SimActionData(policy_state.chosen_action)
 
 class _SimStepData:
     def __init__(
         self,
         time,
-        rotation,
-        translation,
-        beliefs,
-        object_position,
-        chosen_action,
-        losses,
+        belief_space_states,
+        policy_state,
         duration,
     ):
         self.t = time
-        self.agent_frame_rotation = rotation.tolist()
-        self.agent_frame_translation = translation.tolist()
-        self.agent_beliefs_mean = beliefs.qx.mean.tolist()
-        self.agent_beliefs_cov = beliefs.qx.cov.tolist()
-        self.object_pos = object_position.tolist()
-        self.losses = losses.tolist()
-        self.selected_action = chosen_action.item()
+        self.states = [_SimBeliefData(state) for state in belief_space_states]
+        self.policy = _SimPolicyData(policy_state)
         self.real_time_duration = duration
 
 
@@ -65,22 +74,14 @@ class SimDataManager:
     def notify_new_step(
         self,
         time,
-        rotation,
-        translation,
-        beliefs,
-        object_position,
-        chosen_action,
-        losses,
+        belief_space_states,
+        policy_state,
         duration,
     ):
         self.current_step = _SimStepData(
             time,
-            rotation,
-            translation,
-            beliefs,
-            object_position,
-            chosen_action,
-            losses,
+            belief_space_states,
+            policy_state,
             duration,
         )
         self.current_sim_data.add_step(self.current_step)

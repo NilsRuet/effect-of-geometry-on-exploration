@@ -93,7 +93,7 @@ def generate_grid_params():
 
 
 def main():
-    all_params = generate_grid_params()
+    all_params = generate_params_with_angles()
     sim = Simulation()
     for i, params in enumerate(all_params):
         Logger.debug(f"### Sim {i+1} ###")

@@ -70,28 +70,21 @@ class Simulation:
         iteration = 0
         while iteration < params.max_steps:
             # Data tracking
-            # rotation = agent.reference_frame.transformation.linear_map
-            # translation = agent.reference_frame.transformation.translation
-            # beliefs = agent.beliefs
-            # obj_position = world.observe_position()
+            belief_space_states = agent.get_belief_states()
 
             t0 = time.time()
             agent_t = iteration * params.deltatime
             # Step
-            agent.step(agent_t)
+            policy_state = agent.step(agent_t)
             duration = time.time() - t0
             Logger.debug(f"execution: ~{int(duration * 1000)}ms")
             Logger.debug("-")
 
-            # Notify data
-            # dataManager.notify_new_step(
-            #     t,
-            #     rotation,
-            #     translation,
-            #     beliefs,
-            #     obj_position,
-            #     action_i,
-            #     losses,
-            #     duration,
-            # )
+            # Notify data for the current step
+            dataManager.notify_new_step(
+                agent_t,
+                belief_space_states,
+                policy_state,
+                duration
+            )
             iteration += 1
