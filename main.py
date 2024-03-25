@@ -4,13 +4,13 @@ This script is used to manage, run and collect data about a set of simulations w
 
 import numpy as np
 import time
-from params import SimParams
+from params import SimParams, BeliefSpaceParams
 from core.simulation import Simulation
 from utils.logger import Logger
 from utils.datamanager import dataManager
 
 
-# Generate params for sims with object located at evenly distributed angles
+# Generate params for sims with a single object located at evenly distributed angles
 def generate_params_with_angles():
     steps = 10
     all_params = []
@@ -23,28 +23,31 @@ def generate_params_with_angles():
         distance = (
             distance_multiplier * base_norm * steps
         )  # Ensure the agent can't go beyond the goal
+
         for i in range(point_count):
             angle = i * angle_delta + np.pi / 2
             pos = np.array((np.cos(angle), np.sin(angle))) * distance
+
             all_params.append(
                 SimParams(
+                    gamma = 1,
+                    belief_spaces=[BeliefSpaceParams(target=pos)],
                     max_steps=steps,
-                    norm_of_translations=norm,
-                    object_position_in_world=pos,
+                    norm_of_translations=norm
                 )
             )
             all_params.append(
                 SimParams(
-                    gamma=0,
+                    gamma = 0,
+                    belief_spaces=[BeliefSpaceParams(target=pos)],
                     max_steps=steps,
-                    norm_of_translations=norm,
-                    object_position_in_world=pos,
+                    norm_of_translations=norm
                 )
             )
     return all_params
 
 
-# Generate parameters of a sim for each position of the object on a grid
+# Generate parameters of a sim for each position of a single object on a grid
 def generate_grid_params():
     all_params = []
     movement_norm = 0.1
@@ -73,8 +76,8 @@ def generate_grid_params():
                 # euclidean
                 all_params.append(
                     SimParams(
-                        gamma=0,
-                        object_position_in_world=object_pos,
+                        gamma = 1,
+                        belief_spaces=[BeliefSpaceParams(target=object_pos)],
                         norm_of_translations=movement_norm,
                         max_steps=1,
                     )
@@ -82,8 +85,8 @@ def generate_grid_params():
                 # projective
                 all_params.append(
                     SimParams(
-                        gamma=1,
-                        object_position_in_world=object_pos,
+                        gamma = 0,
+                        belief_spaces=[BeliefSpaceParams(target=object_pos)],
                         norm_of_translations=movement_norm,
                         max_steps=1,
                     )

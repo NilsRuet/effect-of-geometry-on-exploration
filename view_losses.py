@@ -128,7 +128,8 @@ def main():
             steps = current_sim["steps"]
 
             # Agent positions
-            losses = np.array([np.array(s["losses"]) for s in steps])
+            losses = np.array([np.array(s["policy"]["losses"]) for s in steps])
+
             stats.add_losses(gamma, losses)
 
     stats.plot()

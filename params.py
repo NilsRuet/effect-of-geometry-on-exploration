@@ -4,14 +4,22 @@ This file defines classes used to specify the parameters of the simulations.
 
 import numpy as np
 
+class BeliefSpaceParams:
+    def __init__(
+        self,
+        target=np.array((0, 1)), # in world reference frame
+        initial_beliefs_covariance=0.1,
+        markov_kernel_epsilon=0.5
+    ):
+        self.target = target
+        self.initial_beliefs_covariance = initial_beliefs_covariance  # initial covariance is the identity matrix * this variable
+        self.markov_kernel_epsilon = markov_kernel_epsilon
 
 class SimParams:
     def __init__(
         self,
         gamma=1,
-        object_position_in_world=np.array((0, 1)),
-        initial_beliefs_covariance=0.1,
-        markov_kernel_epsilon=0.5,
+        belief_spaces: list[BeliefSpaceParams] = [],
         deltatime=1,
         max_steps=10,
         norm_of_translations=0.1,
@@ -19,9 +27,8 @@ class SimParams:
         loss_epsilon=1e-4,
     ):
         self.gamma = gamma  # gamma in the projective transformation
-        self.object_position_in_world = object_position_in_world
-        self.initial_beliefs_covariance = initial_beliefs_covariance  # initial covariance is the identity matrix * this variable
-        self.markov_kernel_epsilon = markov_kernel_epsilon
+        self.beliefs_spaces = belief_spaces
+
         self.deltatime = deltatime  # time between each step of the algorithm
         self.max_steps = max_steps  # How many steps before the simulation stops
 

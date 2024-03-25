@@ -11,7 +11,7 @@ from core.frame import ReferenceFrame
 from core.loss import EpistemicLoss
 from core.observations import ObjectSensor, MarkovKernel
 from core.policy import ArgminWithEpsilonPolicy
-from params import SimParams
+from params import SimParams, BeliefSpaceParams
 from utils.datamanager import dataManager
 from utils.geometryutils import GeometryUtils
 from utils.logger import Logger
@@ -19,20 +19,46 @@ from utils.rotationutils import RotationUtils
 
 
 class Simulation:
-    def _init_agent(self, params):
-        factory = ProjectiveTransformationFactory(gamma=params.gamma)
-
-        # Start rotated toward the object and with no translation
-        initial_translation = np.array((0, 0))
+    def _init_belief_space(self, id, factory: ProjectiveTransformationFactory, initial_translation, params: BeliefSpaceParams):
         angle = GeometryUtils.get_new_frame_rotation_angle(
-            initial_translation, initial_translation, params.object_position_in_world
+            initial_translation, initial_translation, params.target
         )
+
         initial_rotation = RotationUtils.generate_rotation_matrix(angle)
         initial_reference_transformation = factory.createTransformation(
             initial_rotation, initial_translation
         )
 
-        # action_space = Rotation2DActionSpace(factory, params.min_angle, params.max_angle, params.angle_count)
+        # Init sensor and frame
+        frame = ReferenceFrame(initial_reference_transformation)
+        noise_kernel = MarkovKernel(params.markov_kernel_epsilon)
+        world = ObjectSensor(params.target, noise_kernel)
+
+         # Beliefs are initialized with a mean at the "true" position in the internal world
+        initial_object_position_internal = initial_reference_transformation.transform(
+            params.target
+        )
+
+        initial_beliefs = Beliefs(
+            initial_object_position_internal,
+            params.initial_beliefs_covariance * np.identity(2),
+            noise_kernel,
+        )
+        
+        return PerceptionSpace(id, frame, world, initial_beliefs)
+
+    def _init_agent(self, params: SimParams):
+        # Start with no translation
+        initial_translation = np.array((0, 0))
+        factory = ProjectiveTransformationFactory(gamma=params.gamma)
+
+        # Create belief spaces
+        belief_spaces = []
+        for i, belief_space_param in enumerate(params.beliefs_spaces):
+            belief_space = self._init_belief_space(i, factory, initial_translation, belief_space_param)
+            belief_spaces.append(belief_space)
+
+        # Action space, sampled for each target
         action_space = Translation2DActionSpace(
             factory,
             translation_norm=params.norm_of_translations,
@@ -40,30 +66,12 @@ class Simulation:
             agent_starting_position=-initial_translation,
         )
 
-        # Init world and agent frames
-        agent_frame = ReferenceFrame(initial_reference_transformation)
-        noise_kernel = MarkovKernel(params.markov_kernel_epsilon)
-        world = ObjectSensor(params.object_position_in_world, noise_kernel)
-
-        # Beliefs are initialized with a mean at the "true" position in the internal world
-        initial_object_position_internal = initial_reference_transformation.transform(
-            params.object_position_in_world
-        )
-        initial_beliefs = Beliefs(
-            initial_object_position_internal,
-            params.initial_beliefs_covariance * np.identity(2),
-            noise_kernel,
-        )
-
         # Create loss and policy
-        # loss = SquaredComponentLoss(component_index = 1) # The loss of a vector (x0, x1) is x1 squared
         loss = EpistemicLoss()
         policy = ArgminWithEpsilonPolicy(action_space, loss, params.loss_epsilon)
 
         # Create and run agent
-        # TODO : multiple objects
-        space = PerceptionSpace(1, agent_frame, world, initial_beliefs)
-        return Agent([space], policy)
+        return Agent(belief_spaces, policy)
 
     def run(self, params: SimParams):
         agent = self._init_agent(params)
