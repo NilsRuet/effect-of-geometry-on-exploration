@@ -17,19 +17,28 @@ def main():
             content = file.read()
             deserialized = jsonpickle.decode(content)
 
-        view_sim(simfile, deserialized)
+        view_sim(deserialized)
 
 
-def view_sim(file, simulation_dictionary):
-    # Object position
-    object_position = simulation_dictionary["params"]["object_position_in_world"][
-        "values"
-    ]
+def view_sim(simulation_dictionary):
+    # targets
+    belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
+    targets = [space["target"]["values"] for space in belief_spaces]
+
     steps = simulation_dictionary["steps"]
     # Agent positions
-    # Any one belief state space is ok for this, so we just use the firts one (0)
-    translations = np.array([s["states"][0]["frame_translation"] for s in steps])
-    rotations = np.array([s["states"][0]["frame_rotation"] for s in steps])
+    # Any one belief state space is ok for this, so we just use the first one (0)
+    translations = [s["states"][0]["frame_translation"] for s in steps]
+    rotations = [s["states"][0]["frame_rotation"] for s in steps]
+
+    final_translation = simulation_dictionary["final_state"][0]["frame_translation"]
+    final_rotation = simulation_dictionary["final_state"][0]["frame_rotation"]
+    translations.append(final_translation)
+    rotations.append(final_rotation)
+
+    translations = np.array(translations)
+    rotations = np.array(rotations)
+
     is_euclidean = simulation_dictionary["params"]["gamma"] == 0
 
     # Compute world position based on rotation and translation
@@ -41,12 +50,12 @@ def view_sim(file, simulation_dictionary):
     positions = np.array(positions)
 
     # Plot
-    traj(is_euclidean, object_position, positions)
+    traj(is_euclidean, targets, positions)
 
     plt.show()
 
 
-def traj(is_euclidean, object_position, positions):
+def traj(is_euclidean, targets, positions):
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
 
@@ -70,15 +79,17 @@ def traj(is_euclidean, object_position, positions):
     ax1.set_axisbelow(True)
 
     text_delta = np.array((0.05, 0))
-    # Object
-    ax1.scatter(
-        object_position[0],
-        object_position[1],
-        facecolors="black",
-        edgecolors="black",
-        linewidths=1,
-    )
-    ax1.annotate("object", object_position + text_delta)
+    
+    # targets
+    for i_target, target in enumerate(targets):
+        ax1.scatter(
+            target[0],
+            target[1],
+            facecolors="black",
+            edgecolors="black",
+            linewidths=1,
+        )
+        ax1.annotate(f"object {i_target+1}", target + text_delta)
 
     # Translations
     arrows = [

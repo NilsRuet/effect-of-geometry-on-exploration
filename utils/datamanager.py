@@ -50,12 +50,16 @@ class _SimData:
         self.duration: float = None
         self.params: SimParams = params
         self.steps = []
+        self.final_state = []
 
     def add_step(self, data: _SimStepData):
         self.steps.append(data)
 
     def set_duration(self, duration):
         self.duration = duration
+
+    def add_final_state(self, state: list[_SimBeliefData]):
+        self.final_state = state
 
 
 # Records and writes data to storage after being notified of certain events
@@ -70,6 +74,10 @@ class SimDataManager:
     def notify_new_sim(self, params: SimParams):
         self.count += 1
         self.current_sim_data = _SimData(params)
+
+    def notify_last_step(self, belief_space_states: list[BeliefState]):
+        state = [_SimBeliefData(s) for s in belief_space_states]
+        self.current_sim_data.add_final_state(state)
 
     def notify_new_step(
         self,

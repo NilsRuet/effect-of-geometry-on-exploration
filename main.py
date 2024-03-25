@@ -11,13 +11,11 @@ from utils.datamanager import dataManager
 
 
 def generate_exploration_params():
-    steps = 10
+    steps = 15
     all_params = []
     base_norm = 0.1
 
-    distance = (
-        base_norm * steps
-    )  # Ensure the agent can't go beyond the goal
+    distance = 1
 
     # Not equidistant
     pos1 = np.array((0, 1)) * distance

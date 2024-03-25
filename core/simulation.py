@@ -96,3 +96,7 @@ class Simulation:
                 duration
             )
             iteration += 1
+
+        dataManager.notify_last_step(
+            agent.get_belief_states()
+        )
