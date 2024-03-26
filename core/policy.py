@@ -18,10 +18,14 @@ class ArgminWithEpsilonPolicy:
         action_space: Translation2DActionSpace,
         loss: EpistemicLoss,
         loss_epsilon: float,
+        default_on_illegal: bool,
+        merge_by_min: bool
     ):
         self.action_space = action_space
         self.loss = loss
         self.loss_epsilon = loss_epsilon
+        self.default_on_illegal = default_on_illegal
+        self.merge_by_min = merge_by_min
 
     def select(
         self,
@@ -49,13 +53,25 @@ class ArgminWithEpsilonPolicy:
         # convert to numpy arrays
         future_beliefs_per_space = np.array(future_beliefs_per_space)
 
-        # combine losses by averaging
-        losses = np.sum(loss_per_space, axis=0)
+        # combine losses
+        if(self.merge_by_min):
+            losses = np.min(loss_per_space, axis=0)
+        else:
+            losses = np.sum(loss_per_space, axis=0)
 
-        # Find the best legal action
-        original_indices = np.where(valid_actions)[0] # Keep an array that maps indices of valid_actions to the original indices (including invalid ones)
-        valid_action_index = np.argmin(losses[valid_actions], axis=0) # Find the minimal loss among valid actions
-        best_action_index = original_indices[valid_action_index]  # Retrieve the original index
+        # Find the best action
+        best_action_index = np.argmin(losses, axis=0)
+
+        if(not valid_actions[best_action_index]):
+            if(self.default_on_illegal):
+                # Set the best action to the default action
+                best_action_index = default_action_index
+            else:
+                # Find the best legal action
+                original_indices = np.where(valid_actions)[0] # Keep an array that maps indices of valid_actions to the original indices (including invalid ones)
+                valid_action_index = np.argmin(losses[valid_actions], axis=0) # Find the minimal loss among valid actions
+                best_action_index = original_indices[valid_action_index]  # Retrieve the original index
+        
 
         # If the best loss is not at least a quantity epsilon away from the default action's loss, the default action is selected
         if best_action_index != default_action_index:
@@ -64,7 +80,7 @@ class ArgminWithEpsilonPolicy:
                 best_action_index = default_action_index
         
         action_state = ActionState(best_action_index, world_translations[best_action_index])
-        policy_state = PolicyState(action_state, losses)
+        policy_state = PolicyState(action_state, losses, loss_per_space)
 
         return (
             policy_state,

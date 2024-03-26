@@ -17,10 +17,16 @@ def main():
             content = file.read()
             deserialized = jsonpickle.decode(content)
 
-        view_sim(deserialized)
+        # Plot
+        fig = plt.figure(figsize=(11, 5))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        plot_traj(deserialized, ax1)
+        plot_loss(deserialized, ax2)
+        plt.show()
 
 
-def view_sim(simulation_dictionary):
+def plot_traj(simulation_dictionary, ax):
     # targets
     belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
     targets = [space["target"]["values"] for space in belief_spaces]
@@ -49,47 +55,75 @@ def view_sim(simulation_dictionary):
         positions.append(-translation_world)
     positions = np.array(positions)
 
-    # Plot
-    traj(is_euclidean, targets, positions)
+    _plot_traj(is_euclidean, targets, positions, ax)
 
-    plt.show()
+def plot_loss(simulation_dictionary, ax):
+    # targets
+    belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
+    space_count = len(belief_spaces)
 
+    # data tracking, indexed by timestep
+    loss_evolution = []
+    for i in range(space_count):
+        loss_evolution.append([])
 
-def traj(is_euclidean, targets, positions):
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
+    steps = simulation_dictionary["steps"]
+    is_euclidean = simulation_dictionary["params"]["gamma"] == 0
+
+    # Select loss evolution
+    for step in steps:
+        chosen_action = step["policy"]["chosen_action"]["id"]
+        loss_per_space = np.array(step["policy"]["loss_per_space"])
+        for i in range(space_count):
+            loss_evolution[i].append(loss_per_space[i, chosen_action])
 
     if is_euclidean:
-        ax1.set_title("Agent movement in the Euclidean case")
+        ax.set_title("Loss evolution (euclidean)")
     else:
-        ax1.set_title("Agent movement in the projective case")
+        ax.set_title("Loss evolution (projective)")
 
-    ax1.tick_params(bottom=False, left=False)
-    ax1.spines["top"].set_visible(False)
-    ax1.spines["right"].set_visible(False)
-    ax1.spines["bottom"].set_visible(False)
-    ax1.spines["left"].set_visible(False)
-    ax1.set_aspect("equal", adjustable="datalim")
+    # plot each loss
+    for i, loss_history in enumerate(loss_evolution):
+        ax.plot(loss_history, label=f"target {i+1} loss")
 
-    ax1.grid(color="gray", linestyle="dashed", linewidth=0.5)
-    ax1.tick_params(color="gray", labelcolor="gray")
-    for spine in ax1.spines.values():
+    # Add labels and legend
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Loss')
+    ax.legend()
+
+
+def _plot_traj(is_euclidean, targets, positions, ax):
+    if is_euclidean:
+        ax.set_title("Agent movement in the Euclidean case")
+    else:
+        ax.set_title("Agent movement in the projective case")
+
+    ax.tick_params(bottom=False, left=False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.set_aspect("equal", adjustable="datalim")
+
+    ax.grid(color="gray", linestyle="dashed", linewidth=0.5)
+    ax.tick_params(color="gray", labelcolor="gray")
+    for spine in ax.spines.values():
         spine.set_edgecolor("gray")
 
-    ax1.set_axisbelow(True)
+    ax.set_axisbelow(True)
 
     text_delta = np.array((0.05, 0))
     
     # targets
     for i_target, target in enumerate(targets):
-        ax1.scatter(
+        ax.scatter(
             target[0],
             target[1],
             facecolors="black",
             edgecolors="black",
             linewidths=1,
         )
-        ax1.annotate(f"object {i_target+1}", target + text_delta)
+        ax.annotate(f"object {i_target+1}", target + text_delta)
 
     # Translations
     arrows = [
@@ -104,7 +138,7 @@ def traj(is_euclidean, targets, positions):
             continue
 
         # Arrow for the translation 
-        ax1.arrow(
+        ax.arrow(
             *arrow[0],
             *(arrow[1] * 0.8),
             head_width=0.04,
@@ -115,7 +149,7 @@ def traj(is_euclidean, targets, positions):
         )
 
     # Agent
-    ax1.scatter(
+    ax.scatter(
         positions[0][0],
         positions[0][1],
         facecolors="black",
@@ -123,7 +157,7 @@ def traj(is_euclidean, targets, positions):
         linewidths=1,
         marker="s",
     )
-    ax1.annotate("agent", positions[0] + text_delta)
+    ax.annotate("agent", positions[0] + text_delta)
 
 
 if __name__ == "__main__":

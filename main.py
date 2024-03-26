@@ -11,7 +11,7 @@ from utils.datamanager import dataManager
 
 
 def generate_exploration_params():
-    steps = 100
+    steps = 10
     all_params = []
     base_norm = 0.1
 
@@ -23,26 +23,21 @@ def generate_exploration_params():
 
     belief_space_params = [BeliefSpaceParams(target=pos1), BeliefSpaceParams(target=pos2)]
 
-    all_params.append(
-        SimParams(
-            gamma = 1,
-            direction_count=16,
-            belief_spaces=belief_space_params,
-            max_steps=steps,
-            norm_of_translations=base_norm,
-            distance_filter=1.4*base_norm
-        )
-    )
-    all_params.append(
-        SimParams(
-            gamma = 0,
-            direction_count=16,
-            belief_spaces=belief_space_params,
-            max_steps=steps,
-            norm_of_translations=base_norm,
-            distance_filter=1.4*base_norm
-        )
-    )
+    for merge_by_max in [False, True]:
+        for default_on_illegal in [False, True]:
+            all_params.append(
+                SimParams(
+                    gamma = 1,
+                    direction_count=8,
+                    belief_spaces=belief_space_params,
+                    max_steps=steps,
+                    norm_of_translations=base_norm,
+                    distance_filter=1.4*base_norm,
+                    default_on_illegal=default_on_illegal,
+                    merge_loss_by_min=merge_by_max
+                )
+            )
+
     return all_params
 
 # Generate params for sims with a single object located at evenly distributed angles

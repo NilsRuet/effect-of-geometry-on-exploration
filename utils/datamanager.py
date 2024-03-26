@@ -29,6 +29,7 @@ class _SimActionData:
 class _SimPolicyData:
     def __init__(self, policy_state: PolicyState):
         self.losses = policy_state.losses.tolist()
+        self.loss_per_space = [loss.tolist() for loss in policy_state.loss_per_space]
         self.chosen_action = _SimActionData(policy_state.chosen_action)
 
 class _SimStepData:

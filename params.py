@@ -26,6 +26,8 @@ class SimParams:
         distance_filter=0.15,
         direction_count=8,
         loss_epsilon=1e-4,
+        default_on_illegal=False,
+        merge_loss_by_min=False
     ):
         self.gamma = gamma  # gamma in the projective transformation
         self.beliefs_spaces = belief_spaces
@@ -40,6 +42,8 @@ class SimParams:
 
         # how different from the default action the loss of an action has to be to be selected
         self.loss_epsilon = loss_epsilon
+        self.default_on_illegal = default_on_illegal
+        self.merge_loss_by_min = merge_loss_by_min
 
 
 # Parameters of the simulation

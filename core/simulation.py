@@ -82,7 +82,7 @@ class Simulation:
 
         # Create loss and policy
         loss = EpistemicLoss()
-        policy = ArgminWithEpsilonPolicy(action_space, loss, params.loss_epsilon)
+        policy = ArgminWithEpsilonPolicy(action_space, loss, params.loss_epsilon, params.default_on_illegal, params.merge_loss_by_min)
 
         # Create and run agent
         return Agent(belief_spaces, policy)
