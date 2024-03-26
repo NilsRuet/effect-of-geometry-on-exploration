@@ -23,7 +23,7 @@ class SimParams:
         deltatime=1,
         max_steps=10,
         norm_of_translations=0.1,
-        distance_filter=0.15,
+        distance_filter=0.14,
         direction_count=8,
         loss_epsilon=1e-4,
         default_on_illegal=False,

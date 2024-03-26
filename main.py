@@ -8,10 +8,11 @@ from params import SimParams, BeliefSpaceParams
 from core.simulation import Simulation
 from utils.logger import Logger
 from utils.datamanager import dataManager
+from itertools import product
 
 
 def generate_exploration_params():
-    steps = 10
+    steps = 200
     all_params = []
     base_norm = 0.1
 
@@ -21,22 +22,38 @@ def generate_exploration_params():
     pos1 = np.array((-0.5, 1)) * distance
     pos2 = np.array((0.25, 1)) * distance
 
-    belief_space_params = [BeliefSpaceParams(target=pos1), BeliefSpaceParams(target=pos2)]
+    directions = [8]
+    kernel_epsilons = [0.5, 0.1, 0.9]
+    merge_by_min_options = [False, True]
+    idle_on_illegal_illegal_option = [True, False]
+    options1 = list(product(directions, kernel_epsilons, merge_by_min_options, idle_on_illegal_illegal_option))
 
-    for merge_by_max in [False, True]:
-        for default_on_illegal in [False, True]:
-            all_params.append(
-                SimParams(
-                    gamma = 1,
-                    direction_count=8,
-                    belief_spaces=belief_space_params,
-                    max_steps=steps,
-                    norm_of_translations=base_norm,
-                    distance_filter=1.4*base_norm,
-                    default_on_illegal=default_on_illegal,
-                    merge_loss_by_min=merge_by_max
-                )
+    # direction is irrelevant for merge by min
+    directions = [32]
+    kernel_epsilons = [0.5]
+    merge_by_min_options = [False]
+    idle_on_illegal_illegal_option = [True, False]
+    options2 = list(product(directions, kernel_epsilons, merge_by_min_options, idle_on_illegal_illegal_option))
+
+    options = options1 + options2
+
+    for direction_count, kernel_epsilon, merge_by_min, default_on_illegal in options:
+        belief_space_params = [
+            BeliefSpaceParams(target=pos1, markov_kernel_epsilon=kernel_epsilon),
+            BeliefSpaceParams(target=pos2, markov_kernel_epsilon=kernel_epsilon)
+        ]
+        all_params.append(
+            SimParams(
+                gamma = 1,
+                direction_count=direction_count,
+                belief_spaces=belief_space_params,
+                max_steps=steps,
+                norm_of_translations=base_norm,
+                distance_filter=1.4*base_norm,
+                default_on_illegal=default_on_illegal,
+                merge_loss_by_min=merge_by_min
             )
+        )
 
     return all_params
 
