@@ -96,7 +96,14 @@ def traj(is_euclidean, targets, positions):
         (positions[i], positions[i + 1] - positions[i])
         for i in range(len(positions) - 1)
     ]
+
     for arrow in arrows:
+        # don't draw arrows that are too short
+        vect = np.array(arrow[1])
+        if(np.linalg.norm(vect) < 0.01):
+            continue
+
+        # Arrow for the translation 
         ax1.arrow(
             *arrow[0],
             *(arrow[1] * 0.8),

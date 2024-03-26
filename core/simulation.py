@@ -48,15 +48,14 @@ class Simulation:
         return PerceptionSpace(id, frame, world, initial_beliefs)
 
     def generate_distance_filter(self, radius):
-        def filter_too_close(idle_translation, world_translations, observations):
-            filtered = []
+        def filter_too_close(world_positions, observations):
+            valid = []
             radius_sqr = radius * radius
-            for translation in world_translations:
-                vecs = [obs - idle_translation for obs in observations]
+            for position in world_positions:
+                vecs = [obs - position for obs in observations]
                 norms = [v[0] * v[0] + v[1] * v[1] for v in vecs]
-                if(min(norms) > radius_sqr):
-                    filtered.append(translation)
-            return filtered
+                valid.append(min(norms) > radius_sqr)
+            return valid
 
         return filter_too_close
 

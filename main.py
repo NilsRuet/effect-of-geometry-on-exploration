@@ -11,34 +11,36 @@ from utils.datamanager import dataManager
 
 
 def generate_exploration_params():
-    steps = 10
+    steps = 100
     all_params = []
     base_norm = 0.1
 
     distance = 2
 
     # equidistant
-    pos1 = np.array((-1, 0)) * distance
-    pos2 = np.array((1, 0)) * distance
+    pos1 = np.array((-0.5, 1)) * distance
+    pos2 = np.array((0.25, 1)) * distance
 
     belief_space_params = [BeliefSpaceParams(target=pos1), BeliefSpaceParams(target=pos2)]
 
     all_params.append(
         SimParams(
             gamma = 1,
+            direction_count=16,
             belief_spaces=belief_space_params,
             max_steps=steps,
             norm_of_translations=base_norm,
-            distance_filter=2*base_norm
+            distance_filter=1.4*base_norm
         )
     )
     all_params.append(
         SimParams(
             gamma = 0,
+            direction_count=16,
             belief_spaces=belief_space_params,
             max_steps=steps,
             norm_of_translations=base_norm,
-            distance_filter=2*base_norm
+            distance_filter=1.4*base_norm
         )
     )
     return all_params

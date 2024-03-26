@@ -177,7 +177,8 @@ class Translation2DActionSpace:
         world_translations.insert(0, idle_transform)
 
         # Apply filter for illegal action
-        world_translations = self.filter(idle_transform, world_translations, observations)
+        world_positions = -np.array(world_translations)
+        valid_actions = self.filter(world_positions, observations)
 
         # Each translation will be applied in several reference frames
         # because the translations are synchronized, but not the rotations
@@ -214,4 +215,4 @@ class Translation2DActionSpace:
             )
             new_actions.append(actions)
 
-        return np.array(new_actions), np.int32(0), np.array(world_translations)
+        return np.array(new_actions), np.int32(0), np.array(world_translations), np.array(valid_actions)
