@@ -67,15 +67,33 @@ def plot_loss(simulation_dictionary, ax):
     for i in range(space_count):
         loss_evolution.append([])
 
+
     steps = simulation_dictionary["steps"]
     is_euclidean = simulation_dictionary["params"]["gamma"] == 0
+
+
+    # TODO : debug
+    # all_losses = None
+    # init = False
 
     # Select loss evolution
     for step in steps:
         chosen_action = step["policy"]["chosen_action"]["id"]
         loss_per_space = np.array(step["policy"]["loss_per_space"])
+
+        # TODO : debug
+        # if not init:
+        #     init = True
+        #     all_losses = loss_per_space[0]
+        # else:
+        #     all_losses = np.vstack((all_losses, loss_per_space[0]))
+
         for i in range(space_count):
             loss_evolution[i].append(loss_per_space[i, chosen_action])
+
+    # TODO : debug
+    # for i in range(all_losses.shape[1]):
+    #     ax.plot(all_losses[:,i], label=f"action {i+1}")
 
     if is_euclidean:
         ax.set_title("Loss evolution (euclidean)")
@@ -131,7 +149,7 @@ def _plot_traj(is_euclidean, targets, positions, ax):
         for i in range(len(positions) - 1)
     ]
 
-    for arrow in arrows:
+    for i, arrow in enumerate(arrows):
         # don't draw arrows that are too short
         vect = np.array(arrow[1])
         if(np.linalg.norm(vect) < 0.01):
@@ -147,6 +165,7 @@ def _plot_traj(is_euclidean, targets, positions, ax):
             length_includes_head=True,
             color="gray"
         )
+        ax.text(*arrow[0], f"{i+1}", fontsize=7, color='red')
 
     # Agent
     ax.scatter(

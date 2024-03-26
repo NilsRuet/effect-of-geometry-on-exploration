@@ -12,34 +12,27 @@ from itertools import product
 
 
 def generate_exploration_params():
-    steps = 200
+    steps = 15
     all_params = []
     base_norm = 0.1
 
-    distance = 2
+    distance = 1
+    initial_prior = 0.1
 
     # equidistant
-    pos1 = np.array((-0.5, 1)) * distance
+    pos1 = np.array((-2, 1)) * distance
     pos2 = np.array((0.25, 1)) * distance
 
     directions = [8]
-    kernel_epsilons = [0.5, 0.1, 0.9]
-    merge_by_min_options = [False, True]
-    idle_on_illegal_illegal_option = [True, False]
-    options1 = list(product(directions, kernel_epsilons, merge_by_min_options, idle_on_illegal_illegal_option))
+    radius_limit = [1.5 * base_norm]
+    kernel_epsilons = [0.05]
+    merge_by_min_options = [True, False]
+    idle_on_illegal_illegal_option = [True]
+    options = list(product(directions, kernel_epsilons, merge_by_min_options, idle_on_illegal_illegal_option, radius_limit))
 
-    # direction is irrelevant for merge by min
-    directions = [32]
-    kernel_epsilons = [0.5]
-    merge_by_min_options = [False]
-    idle_on_illegal_illegal_option = [True, False]
-    options2 = list(product(directions, kernel_epsilons, merge_by_min_options, idle_on_illegal_illegal_option))
-
-    options = options1 + options2
-
-    for direction_count, kernel_epsilon, merge_by_min, default_on_illegal in options:
+    for direction_count, kernel_epsilon, merge_by_min, default_on_illegal, illegal_radius in options:
         belief_space_params = [
-            BeliefSpaceParams(target=pos1, markov_kernel_epsilon=kernel_epsilon),
+            BeliefSpaceParams(target=pos1, markov_kernel_epsilon=kernel_epsilon, initial_beliefs_covariance=initial_prior),
             BeliefSpaceParams(target=pos2, markov_kernel_epsilon=kernel_epsilon)
         ]
         all_params.append(
@@ -49,7 +42,7 @@ def generate_exploration_params():
                 belief_spaces=belief_space_params,
                 max_steps=steps,
                 norm_of_translations=base_norm,
-                distance_filter=1.4*base_norm,
+                distance_filter=illegal_radius,
                 default_on_illegal=default_on_illegal,
                 merge_loss_by_min=merge_by_min
             )
