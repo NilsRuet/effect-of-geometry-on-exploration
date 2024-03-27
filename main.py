@@ -23,32 +23,55 @@ def generate_exploration_params():
     pos1 = np.array((-2, 1)) * distance
     pos2 = np.array((0.25, 1)) * distance
 
-    directions = [8]
+    directions = [4]
     radius_limit = [1.4 * base_norm]
-    kernel_epsilons = [0.05]
+    kernel_epsilons = [0.5]
     merge_by_min_options = [True, False]
     idle_on_illegal_illegal_option = [True]
-    options = list(product(directions, kernel_epsilons, merge_by_min_options, idle_on_illegal_illegal_option, radius_limit))
+    options = list(
+        product(
+            directions,
+            kernel_epsilons,
+            merge_by_min_options,
+            idle_on_illegal_illegal_option,
+            radius_limit,
+        )
+    )
 
-    for direction_count, kernel_epsilon, merge_by_min, default_on_illegal, illegal_radius in options:
+    for (
+        direction_count,
+        kernel_epsilon,
+        merge_by_min,
+        default_on_illegal,
+        illegal_radius,
+    ) in options:
         belief_space_params = [
-            BeliefSpaceParams(target=pos1, markov_kernel_epsilon=kernel_epsilon, initial_beliefs_covariance=initial_prior),
-            BeliefSpaceParams(target=pos2, markov_kernel_epsilon=kernel_epsilon, initial_beliefs_covariance=initial_prior)
+            BeliefSpaceParams(
+                target=pos1,
+                markov_kernel_epsilon=kernel_epsilon,
+                initial_beliefs_covariance=initial_prior,
+            ),
+            BeliefSpaceParams(
+                target=pos2,
+                markov_kernel_epsilon=kernel_epsilon,
+                initial_beliefs_covariance=initial_prior,
+            ),
         ]
         all_params.append(
             SimParams(
-                gamma = 1,
+                gamma=1,
                 direction_count=direction_count,
                 belief_spaces=belief_space_params,
                 max_steps=steps,
                 norm_of_translations=base_norm,
                 distance_filter=illegal_radius,
                 default_on_illegal=default_on_illegal,
-                merge_loss_by_min=merge_by_min
+                merge_loss_by_min=merge_by_min,
             )
         )
 
     return all_params
+
 
 # Generate params for sims with a single object located at evenly distributed angles
 def generate_params_with_angles():
@@ -70,18 +93,18 @@ def generate_params_with_angles():
 
             all_params.append(
                 SimParams(
-                    gamma = 1,
+                    gamma=1,
                     belief_spaces=[BeliefSpaceParams(target=pos)],
                     max_steps=steps,
-                    norm_of_translations=norm
+                    norm_of_translations=norm,
                 )
             )
             all_params.append(
                 SimParams(
-                    gamma = 0,
+                    gamma=0,
                     belief_spaces=[BeliefSpaceParams(target=pos)],
                     max_steps=steps,
-                    norm_of_translations=norm
+                    norm_of_translations=norm,
                 )
             )
     return all_params
@@ -116,7 +139,7 @@ def generate_grid_params():
                 # euclidean
                 all_params.append(
                     SimParams(
-                        gamma = 1,
+                        gamma=1,
                         belief_spaces=[BeliefSpaceParams(target=object_pos)],
                         norm_of_translations=movement_norm,
                         max_steps=1,
@@ -125,7 +148,7 @@ def generate_grid_params():
                 # projective
                 all_params.append(
                     SimParams(
-                        gamma = 0,
+                        gamma=0,
                         belief_spaces=[BeliefSpaceParams(target=object_pos)],
                         norm_of_translations=movement_norm,
                         max_steps=1,

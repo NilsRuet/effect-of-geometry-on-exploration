@@ -13,6 +13,7 @@ from utils.logger import Logger
 
 jsonpickle_np.register_handlers()
 
+
 class _SimBeliefData:
     def __init__(self, belief_state: BeliefState):
         self.frame_rotation = belief_state.rotation.tolist()
@@ -21,16 +22,19 @@ class _SimBeliefData:
         self.beliefs_cov = belief_state.beliefs.qx.cov.tolist()
         self.object_pos = belief_state.obj_position.tolist()
 
+
 class _SimActionData:
     def __init__(self, action: ActionState):
         self.id = int(action.id)
         self.translation = action.translation.tolist()
+
 
 class _SimPolicyData:
     def __init__(self, policy_state: PolicyState):
         self.losses = policy_state.losses.tolist()
         self.loss_per_space = [loss.tolist() for loss in policy_state.loss_per_space]
         self.chosen_action = _SimActionData(policy_state.chosen_action)
+
 
 class _SimStepData:
     def __init__(

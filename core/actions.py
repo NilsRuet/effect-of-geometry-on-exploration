@@ -215,4 +215,5 @@ class Translation2DActionSpace:
             )
             new_actions.append(actions)
 
+        # 0 is the index of the idle action
         return np.array(new_actions), np.int32(0), np.array(world_translations), np.array(valid_actions)

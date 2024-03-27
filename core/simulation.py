@@ -19,7 +19,13 @@ from utils.rotationutils import RotationUtils
 
 
 class Simulation:
-    def _init_belief_space(self, id, factory: ProjectiveTransformationFactory, initial_translation, params: BeliefSpaceParams):
+    def _init_belief_space(
+        self,
+        id,
+        factory: ProjectiveTransformationFactory,
+        initial_translation,
+        params: BeliefSpaceParams,
+    ):
         angle = GeometryUtils.get_new_frame_rotation_angle(
             initial_translation, initial_translation, params.target
         )
@@ -31,21 +37,23 @@ class Simulation:
 
         # Init sensor and frame
         frame = ReferenceFrame(initial_reference_transformation)
-        noise_kernel = MarkovKernel(params.markov_kernel_epsilon)
-        world = ObjectSensor(params.target, noise_kernel)
+        world = ObjectSensor(params.target)
 
-         # Beliefs are initialized with a mean at the "true" position in the internal world
+        # Beliefs are initialized with a mean at the "true" position in the internal world
         initial_object_position_internal = initial_reference_transformation.transform(
             params.target
         )
 
+        # TODO : true generator
+        kernel_generator = lambda eccentricity, distance: MarkovKernel(params.markov_kernel_epsilon)
+
         initial_beliefs = Beliefs(
             initial_object_position_internal,
             params.initial_beliefs_covariance * np.identity(2),
-            noise_kernel,
+            kernel_generator(None, None), # TODO
         )
-        
-        return PerceptionSpace(id, frame, world, initial_beliefs)
+
+        return PerceptionSpace(id, frame, world, initial_beliefs, kernel_generator)
 
     def generate_distance_filter(self, radius):
         def filter_too_close(world_positions, observations):
@@ -67,7 +75,9 @@ class Simulation:
         # Create belief spaces
         belief_spaces = []
         for i, belief_space_param in enumerate(params.beliefs_spaces):
-            belief_space = self._init_belief_space(i, factory, initial_translation, belief_space_param)
+            belief_space = self._init_belief_space(
+                i, factory, initial_translation, belief_space_param
+            )
             belief_spaces.append(belief_space)
 
         # Action space, sampled for each target
@@ -77,15 +87,24 @@ class Simulation:
             translation_norm=params.norm_of_translations,
             direction_count=params.translation_direction_count,
             agent_starting_position=-initial_translation,
-            filter=filter
+            filter=filter,
         )
 
         # Create loss and policy
         loss = EpistemicLoss()
-        policy = ArgminWithEpsilonPolicy(action_space, loss, params.loss_epsilon, params.default_on_illegal, params.merge_loss_by_min)
+        policy = ArgminWithEpsilonPolicy(
+            loss,
+            params.loss_epsilon,
+            params.default_on_illegal,
+            params.merge_loss_by_min,
+        )
 
         # Create and run agent
-        return Agent(belief_spaces, policy)
+        return Agent(
+            belief_spaces,
+            action_space,
+            policy
+        )
 
     def run(self, params: SimParams):
         agent = self._init_agent(params)
@@ -104,13 +123,8 @@ class Simulation:
 
             # Notify data for the current step
             dataManager.notify_new_step(
-                agent_t,
-                belief_space_states,
-                policy_state,
-                duration
+                agent_t, belief_space_states, policy_state, duration
             )
             iteration += 1
 
-        dataManager.notify_last_step(
-            agent.get_belief_states()
-        )
+        dataManager.notify_last_step(agent.get_belief_states())

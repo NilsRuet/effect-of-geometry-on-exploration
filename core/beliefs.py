@@ -20,8 +20,8 @@ from utils.logger import Logger
 class Beliefs:
     zero_covariance_threshold = 1e-8
 
-    def __init__(self, mean, covariance, observation_markov_kernel: MarkovKernel):
-        self.observation_kernel = observation_markov_kernel
+    def __init__(self, mean, covariance, observation_kernel: MarkovKernel):
+        self.observation_kernel = observation_kernel
         self._set_mean_and_cov(mean, covariance)
 
     def _set_mean_and_cov(self, mean, covariance):
@@ -45,10 +45,15 @@ class Beliefs:
         self.pxy = scipy.stats.multivariate_normal(mean_xy, sigma_xy)
 
     # Computes new beliefs resulting from the given actions
-    def propagate_actions(self, actions: List[ProjectiveAction], log_prefix = ""):
+    def propagate_actions(
+        self,
+        actions: List[ProjectiveAction],
+        kernels: list[MarkovKernel],
+        log_prefix="",
+    ):
         predicted_beliefs = []
         # Integrate the transformed distribution and approximate it by a gaussian distribution
-        for i_action, action in enumerate(actions):
+        for i_action, action, kernel in zip(range(len(actions)), actions, kernels):
             Logger.progress(f"{log_prefix}Action {i_action+1}/{len(actions)}")
             # Skip the integration if the distribution is basically a single point
             if (
@@ -63,7 +68,7 @@ class Beliefs:
                 mean = self._integrate_mean(action, *bounds)
                 covariance = self._integrate_covariance(action, mean, *bounds)
 
-            predicted_beliefs.append(Beliefs(mean, covariance, self.observation_kernel))
+            predicted_beliefs.append(Beliefs(mean, covariance, kernel))
 
         return np.array(predicted_beliefs)
 

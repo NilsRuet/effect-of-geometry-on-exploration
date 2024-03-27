@@ -11,12 +11,8 @@ class MarkovKernel:
 
 # Holds information about the world
 class ObjectSensor:
-    def __init__(self, object_position, noisy_sensor_kernel):
-        self.markov_kernel = noisy_sensor_kernel
+    def __init__(self, object_position):
         self.object_position = object_position
 
     def observe_position(self):
         return self.object_position
-
-    def get_sensor_kernel(self):
-        return self.markov_kernel

@@ -10,7 +10,7 @@ from core.beliefs import Beliefs
 class EpistemicLoss:
     def __call__(self, future_beliefs: List[Beliefs]):
         losses = []
-        for i_belief, beliefs in enumerate(future_beliefs):
+        for beliefs in future_beliefs:
             Kx = np.linalg.det(beliefs.qx.cov)
             Ky = np.linalg.det(beliefs.py.cov)
             Kxy = np.linalg.det(beliefs.pxy.cov)

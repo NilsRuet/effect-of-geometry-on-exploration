@@ -57,6 +57,7 @@ def plot_traj(simulation_dictionary, ax):
 
     _plot_traj(is_euclidean, targets, positions, ax)
 
+
 def plot_loss(simulation_dictionary, ax):
     # targets
     belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
@@ -67,10 +68,8 @@ def plot_loss(simulation_dictionary, ax):
     for i in range(space_count):
         loss_evolution.append([])
 
-
     steps = simulation_dictionary["steps"]
     is_euclidean = simulation_dictionary["params"]["gamma"] == 0
-
 
     # TODO : debug
     # all_losses = None
@@ -105,8 +104,8 @@ def plot_loss(simulation_dictionary, ax):
         ax.plot(loss_history, label=f"target {i+1} loss")
 
     # Add labels and legend
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Loss')
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Loss")
     ax.legend()
 
 
@@ -131,7 +130,7 @@ def _plot_traj(is_euclidean, targets, positions, ax):
     ax.set_axisbelow(True)
 
     text_delta = np.array((0.05, 0))
-    
+
     # targets
     for i_target, target in enumerate(targets):
         ax.scatter(
@@ -152,10 +151,10 @@ def _plot_traj(is_euclidean, targets, positions, ax):
     for i, arrow in enumerate(arrows):
         # don't draw arrows that are too short
         vect = np.array(arrow[1])
-        if(np.linalg.norm(vect) < 0.01):
+        if np.linalg.norm(vect) < 0.01:
             continue
 
-        # Arrow for the translation 
+        # Arrow for the translation
         ax.arrow(
             *arrow[0],
             *(arrow[1] * 0.8),
@@ -163,9 +162,9 @@ def _plot_traj(is_euclidean, targets, positions, ax):
             head_length=0.03,
             width=0.008,
             length_includes_head=True,
-            color="gray"
+            color="gray",
         )
-        ax.text(*arrow[0], f"{i+1}", fontsize=7, color='red')
+        ax.text(*arrow[0], f"{i+1}", fontsize=7, color="red")
 
     # Agent
     ax.scatter(
