@@ -82,8 +82,15 @@ class ArgminWithEpsilonPolicy:
         action_state = ActionState(best_action_index, world_translations[best_action_index])
         policy_state = PolicyState(action_state, losses, loss_per_space)
 
+        # Compute world position and direction of the selected action, which will be used to compute the covariance of the observation kernel
+        next_world_position = -world_translations[best_action_index]
+        transform = current_transformations[0]
+        current_world_position = -np.matmul(transform.inverse_linear_map, transform.translation)
+
         return (
             policy_state,
             actions_per_space[:,best_action_index],
             future_beliefs_per_space[:,best_action_index],
+            current_world_position,
+            next_world_position
         )

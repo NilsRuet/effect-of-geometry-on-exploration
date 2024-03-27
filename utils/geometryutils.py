@@ -46,3 +46,11 @@ class GeometryUtils:
         # This means the y axis is mapped to itself by default (without rotations), and implies that an agent with 0 rotation therefore faces upward
         # pi/2 is subtracted to angle obtained through trigonometry functions to account for this shift
         return np.arctan2(v[1], v[0]) - np.pi / 2
+    
+    # Compute the angle (eccentricity) of ab^c
+    def get_angle(a, b, c):
+        v1 = a-b
+        v2 = c-b
+        angle1 = np.arctan2(v1[1], v1[0])
+        angle2 = np.arctan2(v2[1], v2[0])
+        return angle1 - angle2

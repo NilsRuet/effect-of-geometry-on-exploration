@@ -1,8 +1,10 @@
+import numpy as np
 from core.beliefs import Beliefs
 from core.frame import ReferenceFrame
 from core.observations import ObjectSensor
 from core.states import BeliefState
 from utils.logger import Logger
+from utils.geometryutils import GeometryUtils
 
 class PerceptionSpace:
     def __init__(
@@ -31,17 +33,30 @@ class Agent:
         beliefs = [s.beliefs for s in self.spaces]
 
         # best moves and new beliefs are indexed by space
-        policy_state, best_moves, new_beliefs = self.policy.select(
+        policy_state, best_moves, new_beliefs, current_pos, next_pos = self.policy.select(
             frame_transformations, beliefs, observations
         )
+
+        # compute distance and angle for each object
+        markov_kernel_params = []
+        for obs in observations:
+            eccentricity = abs(GeometryUtils.get_angle(next_pos, current_pos, obs))
+            distance = np.linalg.norm(obs - next_pos)
+            markov_kernel_params.append((eccentricity, distance))
+
 
         # Debug info
         Logger.debug(f"Step t = {time}")
         for space, best_move, observation, beliefs in zip(self.spaces, best_moves, observations, new_beliefs):        
+            # Update reference frame and beliefs
             space.reference_frame.update(best_move.phi_rm)
             space.beliefs = beliefs
+
+            # Update prior based on observation
             local_observation = space.reference_frame.world_to_local(observation)
             space.beliefs.update(local_observation)
+
+            # Logging
             Logger.debug(f"Space {space.id}")
             Logger.debug(
                 "mean = ({:0.3f} {:0.3f})".format(

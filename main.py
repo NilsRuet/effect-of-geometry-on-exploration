@@ -24,7 +24,7 @@ def generate_exploration_params():
     pos2 = np.array((0.25, 1)) * distance
 
     directions = [8]
-    radius_limit = [1.5 * base_norm]
+    radius_limit = [1.4 * base_norm]
     kernel_epsilons = [0.05]
     merge_by_min_options = [True, False]
     idle_on_illegal_illegal_option = [True]
@@ -33,7 +33,7 @@ def generate_exploration_params():
     for direction_count, kernel_epsilon, merge_by_min, default_on_illegal, illegal_radius in options:
         belief_space_params = [
             BeliefSpaceParams(target=pos1, markov_kernel_epsilon=kernel_epsilon, initial_beliefs_covariance=initial_prior),
-            BeliefSpaceParams(target=pos2, markov_kernel_epsilon=kernel_epsilon)
+            BeliefSpaceParams(target=pos2, markov_kernel_epsilon=kernel_epsilon, initial_beliefs_covariance=initial_prior)
         ]
         all_params.append(
             SimParams(
