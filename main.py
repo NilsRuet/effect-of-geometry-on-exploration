@@ -23,17 +23,17 @@ def generate_exploration_params():
     pos1 = np.array((-2, 1)) * distance
     pos2 = np.array((0.25, 1)) * distance
 
-    directions = [4]
+    directions = [8]
     radius_limit = [1.4 * base_norm]
     kernel_epsilons = [0.5]
     merge_by_min_options = [True, False]
-    idle_on_illegal_illegal_option = [True]
+    idle_on_illegal_illegal_options = [True]
     options = list(
         product(
             directions,
             kernel_epsilons,
             merge_by_min_options,
-            idle_on_illegal_illegal_option,
+            idle_on_illegal_illegal_options,
             radius_limit,
         )
     )

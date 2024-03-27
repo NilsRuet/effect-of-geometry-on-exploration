@@ -19,11 +19,36 @@ from utils.rotationutils import RotationUtils
 
 
 class Simulation:
+    def run(self, params: SimParams):
+        agent = self._init_agent(params)
+        iteration = 0
+        while iteration < params.max_steps:
+            # Data tracking
+            belief_space_states = agent.get_belief_states()
+
+            t0 = time.time()
+            agent_t = iteration * params.deltatime
+            # Step
+            policy_state = agent.step(agent_t)
+            duration = time.time() - t0
+            Logger.debug(f"execution: ~{int(duration * 1000)}ms")
+            Logger.debug("-")
+
+            # Notify data for the current step
+            dataManager.notify_new_step(
+                agent_t, belief_space_states, policy_state, duration
+            )
+            iteration += 1
+
+        dataManager.notify_last_step(agent.get_belief_states())
+
     def _init_belief_space(
         self,
         id,
         factory: ProjectiveTransformationFactory,
         initial_translation,
+        initial_eccentricity,
+        initial_distance,
         params: BeliefSpaceParams,
     ):
         angle = GeometryUtils.get_new_frame_rotation_angle(
@@ -44,39 +69,39 @@ class Simulation:
             params.target
         )
 
-        # TODO : true generator
-        kernel_generator = lambda eccentricity, distance: MarkovKernel(params.markov_kernel_epsilon)
+        kernel_generator = self.get_kernel_generator(
+            params.initial_kernel_epsilon, params.acuity_coef, params.distance_coef
+        )
 
         initial_beliefs = Beliefs(
             initial_object_position_internal,
             params.initial_beliefs_covariance * np.identity(2),
-            kernel_generator(None, None), # TODO
+            kernel_generator(initial_eccentricity, initial_distance),
         )
 
         return PerceptionSpace(id, frame, world, initial_beliefs, kernel_generator)
-
-    def generate_distance_filter(self, radius):
-        def filter_too_close(world_positions, observations):
-            valid = []
-            radius_sqr = radius * radius
-            for position in world_positions:
-                vecs = [obs - position for obs in observations]
-                norms = [v[0] * v[0] + v[1] * v[1] for v in vecs]
-                valid.append(min(norms) > radius_sqr)
-            return valid
-
-        return filter_too_close
 
     def _init_agent(self, params: SimParams):
         # Start with no translation
         initial_translation = np.array((0, 0))
         factory = ProjectiveTransformationFactory(gamma=params.gamma)
 
+        # The agent starts facing an arbitrary direction (it doesn't matter as the initial beliefs are not updated using an observation)
+        initial_position = -initial_translation
+        initial_forward = initial_position+np.array((0,1))
+        eccentricities = [abs(GeometryUtils.get_angle(initial_forward, initial_position, space.target)) for space in params.beliefs_spaces]
+        distances = [np.linalg.norm(space.target - initial_position) for space in params.beliefs_spaces]
+
         # Create belief spaces
         belief_spaces = []
-        for i, belief_space_param in enumerate(params.beliefs_spaces):
+        for i, belief_space_param, initial_eccentricity, initial_distance in zip(range(len(params.beliefs_spaces)), params.beliefs_spaces, eccentricities, distances):
             belief_space = self._init_belief_space(
-                i, factory, initial_translation, belief_space_param
+                i,
+                factory,
+                initial_translation,
+                initial_eccentricity,
+                initial_distance,
+                belief_space_param,
             )
             belief_spaces.append(belief_space)
 
@@ -100,31 +125,26 @@ class Simulation:
         )
 
         # Create and run agent
-        return Agent(
-            belief_spaces,
-            action_space,
-            policy
-        )
+        return Agent(belief_spaces, action_space, policy)
 
-    def run(self, params: SimParams):
-        agent = self._init_agent(params)
-        iteration = 0
-        while iteration < params.max_steps:
-            # Data tracking
-            belief_space_states = agent.get_belief_states()
+    def generate_distance_filter(self, radius):
+        def filter_too_close(world_positions, observations):
+            valid = []
+            radius_sqr = radius * radius
+            for position in world_positions:
+                vecs = [obs - position for obs in observations]
+                norms = [v[0] * v[0] + v[1] * v[1] for v in vecs]
+                valid.append(min(norms) > radius_sqr)
+            return valid
 
-            t0 = time.time()
-            agent_t = iteration * params.deltatime
-            # Step
-            policy_state = agent.step(agent_t)
-            duration = time.time() - t0
-            Logger.debug(f"execution: ~{int(duration * 1000)}ms")
-            Logger.debug("-")
+        return filter_too_close
 
-            # Notify data for the current step
-            dataManager.notify_new_step(
-                agent_t, belief_space_states, policy_state, duration
-            )
-            iteration += 1
+    def get_kernel_generator(
+        self, initial_markov_epsilon, acuity_coef, distance_coef, min_variance=0.05
+    ):
+        def kernel_generator(eccentricity, distance):
+            acuity = np.exp(-acuity_coef * eccentricity)
+            certainty = distance_coef * acuity / (distance)
+            return MarkovKernel(initial_markov_epsilon * np.maximum(1 - certainty, min_variance))
 
-        dataManager.notify_last_step(agent.get_belief_states())
+        return kernel_generator

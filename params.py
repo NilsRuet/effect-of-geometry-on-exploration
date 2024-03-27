@@ -9,11 +9,15 @@ class BeliefSpaceParams:
         self,
         target=np.array((0, 1)), # in world reference frame
         initial_beliefs_covariance=0.1,
-        markov_kernel_epsilon=0.5
+        markov_kernel_epsilon=0.5,
+        acuity_coef = 6,
+        distance_coef = 0.4
     ):
         self.target = target
         self.initial_beliefs_covariance = initial_beliefs_covariance  # initial covariance is the identity matrix * this variable
-        self.markov_kernel_epsilon = markov_kernel_epsilon
+        self.initial_kernel_epsilon = markov_kernel_epsilon
+        self.acuity_coef = acuity_coef
+        self.distance_coef = distance_coef
 
 class SimParams:
     def __init__(

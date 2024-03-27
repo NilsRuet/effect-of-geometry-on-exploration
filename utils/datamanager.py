@@ -117,7 +117,8 @@ class SimDataManager:
         Logger.debug(f"File writing : {int((time.time() - t0) * 1000)}ms")
 
     def _get_name(self, params: SimParams, sim_number):
-        name = "sim{:02d}_gamma{:0.2f}_norm{:0.2f}.json"
+        name = "sim{:02d}_gamma{:0.2f}_norm{:0.2f}"
+        name += ".json"
         return name.format(
             sim_number,
             params.gamma,
