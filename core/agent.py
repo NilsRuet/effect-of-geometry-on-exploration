@@ -142,8 +142,9 @@ class Agent:
             rotation = space.reference_frame.transformation.linear_map
             translation = space.reference_frame.transformation.translation
             beliefs = space.beliefs
+            observation_kernel_epsilon = space.beliefs.observation_kernel.epsilon
             obj_position = space.observe()
             belief_space_states.append(
-                BeliefState(rotation, translation, beliefs, obj_position)
+                BeliefState(rotation, translation, beliefs, obj_position, observation_kernel_epsilon)
             )
         return belief_space_states

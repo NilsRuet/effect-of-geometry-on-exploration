@@ -3,11 +3,8 @@ This class defines the policy used by the agent
 """
 
 import numpy as np
-from core.actions import Translation2DActionSpace, ProjectiveTransformation
 from core.beliefs import Beliefs
 from core.loss import EpistemicLoss
-from utils.logger import Logger
-from utils.geometryutils import GeometryUtils
 
 
 # Policy that iterates over actions and select the minimal cost

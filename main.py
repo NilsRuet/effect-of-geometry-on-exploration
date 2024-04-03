@@ -19,14 +19,17 @@ def generate_exploration_params():
     distance = 1
     initial_prior = 0.1
 
-    # equidistant
+    acuity_coef = 6
+    distance_coef = 0.4
+
     pos1 = np.array((-2, 1)) * distance
     pos2 = np.array((0.25, 1)) * distance
+    positions = [pos1, pos2]
 
     directions = [8]
     radius_limit = [1.4 * base_norm]
-    kernel_epsilons = [0.5]
-    merge_by_min_options = [True, False]
+    kernel_epsilons = [0.05, 0.1, 0.5, 1.0, 2.0]
+    merge_by_min_options = [True]
     idle_on_illegal_illegal_options = [True]
     options = list(
         product(
@@ -47,15 +50,13 @@ def generate_exploration_params():
     ) in options:
         belief_space_params = [
             BeliefSpaceParams(
-                target=pos1,
+                target=pos,
                 markov_kernel_epsilon=kernel_epsilon,
                 initial_beliefs_covariance=initial_prior,
-            ),
-            BeliefSpaceParams(
-                target=pos2,
-                markov_kernel_epsilon=kernel_epsilon,
-                initial_beliefs_covariance=initial_prior,
-            ),
+                acuity_coef=acuity_coef,
+                distance_coef=distance_coef
+            )
+            for pos in positions
         ]
         all_params.append(
             SimParams(

@@ -19,10 +19,14 @@ def main():
 
         # Plot
         fig = plt.figure(figsize=(11, 5))
-        ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122)
+        ax1 = fig.add_subplot(221)
+        ax2 = fig.add_subplot(222)
+        ax3 = fig.add_subplot(223)
+        ax4 = fig.add_subplot(224)
         plot_traj(deserialized, ax1)
         plot_loss(deserialized, ax2)
+        plot_priors(deserialized, ax3)
+        plot_observation_kernels(deserialized, ax4)
         plt.show()
 
 
@@ -57,6 +61,41 @@ def plot_traj(simulation_dictionary, ax):
 
     _plot_traj(is_euclidean, targets, positions, ax)
 
+def plot_priors(simulation_dictionary, ax):
+    # targets
+    belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
+    space_count = len(belief_spaces)
+
+    # data tracking, indexed by timestep
+    steps = simulation_dictionary["steps"]
+    is_euclidean = simulation_dictionary["params"]["gamma"] == 0
+
+    priors_cov = []
+    for i in range(space_count):
+        priors_cov.append([])
+
+    # Select loss evolution
+    for step in steps:
+        states = step["states"]
+        for i in range(space_count):
+            cov_matrix = np.array(states[i]["beliefs_cov"])
+            volume = 2 * np.pi * np.sqrt(abs(cov_matrix[0][0])) * np.sqrt(abs(cov_matrix[1][1]))
+            priors_cov[i].append(volume)
+
+    if is_euclidean:
+        ax.set_title("Volume of priors (euclidean)")
+    else:
+        ax.set_title("Volume of priors (projective)")
+
+    # plot each loss
+    for i, priors in enumerate(priors_cov):
+        ax.plot(priors, label=f"Space {i+1} value")
+
+    # Add labels and legend
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Volume of the priors")
+    ax.legend()
+
 
 def plot_loss(simulation_dictionary, ax):
     # targets
@@ -88,24 +127,24 @@ def plot_loss(simulation_dictionary, ax):
         #     all_losses = np.vstack((all_losses, loss_per_space[0]))
 
         for i in range(space_count):
-            loss_evolution[i].append(loss_per_space[i, chosen_action])
+            loss_evolution[i].append(-loss_per_space[i, chosen_action])
 
     # TODO : debug
     # for i in range(all_losses.shape[1]):
     #     ax.plot(all_losses[:,i], label=f"action {i+1}")
 
     if is_euclidean:
-        ax.set_title("Loss evolution (euclidean)")
+        ax.set_title("Epistemic value (euclidean)")
     else:
-        ax.set_title("Loss evolution (projective)")
+        ax.set_title("Epistemic value (projective)")
 
     # plot each loss
     for i, loss_history in enumerate(loss_evolution):
-        ax.plot(loss_history, label=f"target {i+1} loss")
+        ax.plot(loss_history, label=f"target {i+1} value")
 
     # Add labels and legend
     ax.set_xlabel("Time")
-    ax.set_ylabel("Loss")
+    ax.set_ylabel("Epistemic value")
     ax.legend()
 
 
@@ -176,6 +215,39 @@ def _plot_traj(is_euclidean, targets, positions, ax):
         marker="s",
     )
     ax.annotate("agent", positions[0] + text_delta)
+
+def plot_observation_kernels(simulation_dictionary, ax):
+    # targets
+    belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
+    space_count = len(belief_spaces)
+
+    steps = simulation_dictionary["steps"]
+
+    epsilon_history = []
+    for i in range(space_count):
+        epsilon_history.append([])
+
+    for step in steps:
+        for i in range(space_count):
+            eps = step["states"][i]["kernel_epsilon"]
+            epsilon_history[i].append(eps)
+
+
+    is_euclidean = simulation_dictionary["params"]["gamma"] == 0
+
+    if is_euclidean:
+        ax.set_title("Epistemic value (euclidean)")
+    else:
+        ax.set_title("Epistemic value (projective)")
+
+    # plot each loss
+    for i, epsilon in enumerate(epsilon_history):
+        ax.plot(epsilon, label=f"Kernel {i+1} epsilon")
+
+    # Add labels and legend
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Observation kernel epsilon")
+    ax.legend()
 
 
 if __name__ == "__main__":

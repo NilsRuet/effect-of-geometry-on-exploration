@@ -20,6 +20,26 @@ from utils.rotationutils import RotationUtils
 
 class Simulation:
     def run(self, params: SimParams):
+
+        ## DEBUG
+        # from debug.utils import draw_2D_function, draw_1D_function
+        # def get_kernel_epsilon(x, y):
+        #     vision_axis = (1, 1)
+        #     eccentricity = abs(
+        #         np.arctan2(y, x) - np.arctan2(vision_axis[1], vision_axis[0])
+        #     )
+        #     distance = np.linalg.norm((x, y))
+        #     sample_space = params.beliefs_spaces[0]
+        #     generator = self.get_kernel_generator(
+        #         sample_space.initial_kernel_epsilon,
+        #         sample_space.acuity_coef,
+        #         sample_space.distance_coef,
+        #     )
+        #     return generator(eccentricity, distance).epsilon
+        
+        # draw_2D_function(get_kernel_epsilon, [[0, 5], [0, 5]])
+        # draw_1D_function(lambda x: get_kernel_epsilon(np.sqrt(x), np.sqrt(x)), [0, 5])
+
         agent = self._init_agent(params)
         iteration = 0
         while iteration < params.max_steps:
@@ -88,13 +108,26 @@ class Simulation:
 
         # The agent starts facing an arbitrary direction (it doesn't matter as the initial beliefs are not updated using an observation)
         initial_position = -initial_translation
-        initial_forward = initial_position+np.array((0,1))
-        eccentricities = [abs(GeometryUtils.get_angle(initial_forward, initial_position, space.target)) for space in params.beliefs_spaces]
-        distances = [np.linalg.norm(space.target - initial_position) for space in params.beliefs_spaces]
+        initial_forward = initial_position + np.array((0, 1))
+        eccentricities = [
+            abs(
+                GeometryUtils.get_angle(initial_forward, initial_position, space.target)
+            )
+            for space in params.beliefs_spaces
+        ]
+        distances = [
+            np.linalg.norm(space.target - initial_position)
+            for space in params.beliefs_spaces
+        ]
 
         # Create belief spaces
         belief_spaces = []
-        for i, belief_space_param, initial_eccentricity, initial_distance in zip(range(len(params.beliefs_spaces)), params.beliefs_spaces, eccentricities, distances):
+        for i, belief_space_param, initial_eccentricity, initial_distance in zip(
+            range(len(params.beliefs_spaces)),
+            params.beliefs_spaces,
+            eccentricities,
+            distances,
+        ):
             belief_space = self._init_belief_space(
                 i,
                 factory,
@@ -140,11 +173,13 @@ class Simulation:
         return filter_too_close
 
     def get_kernel_generator(
-        self, initial_markov_epsilon, acuity_coef, distance_coef, min_variance=0.05
+        self, initial_markov_epsilon, acuity_coef, distance_coef, min_variance=0.01
     ):
         def kernel_generator(eccentricity, distance):
             acuity = np.exp(-acuity_coef * eccentricity)
             certainty = distance_coef * acuity / (distance)
-            return MarkovKernel(initial_markov_epsilon * np.maximum(1 - certainty, min_variance))
+            return MarkovKernel(
+                initial_markov_epsilon * np.maximum(1 - certainty, min_variance)
+            )
 
         return kernel_generator

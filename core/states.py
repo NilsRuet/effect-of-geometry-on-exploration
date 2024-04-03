@@ -16,8 +16,9 @@ class PolicyState:
 
 
 class BeliefState:
-    def __init__(self, rotation, translation, beliefs, obj_position):
+    def __init__(self, rotation, translation, beliefs, obj_position, kernel_epsilon):
         self.rotation = rotation
         self.translation = translation
         self.beliefs = beliefs
         self.obj_position = obj_position
+        self.kernel_epsilon = kernel_epsilon

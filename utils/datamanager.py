@@ -21,6 +21,7 @@ class _SimBeliefData:
         self.beliefs_mean = belief_state.beliefs.qx.mean.tolist()
         self.beliefs_cov = belief_state.beliefs.qx.cov.tolist()
         self.object_pos = belief_state.obj_position.tolist()
+        self.kernel_epsilon = float(belief_state.kernel_epsilon)
 
 
 class _SimActionData:
