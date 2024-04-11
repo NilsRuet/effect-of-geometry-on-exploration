@@ -7,6 +7,14 @@ from core.beliefs import Beliefs
 from core.loss import EpistemicLoss
 
 
+class PolicyItem:
+    def __init__(self, target, actions_per_space, beliefs_per_space: list[Beliefs], observation_available: list[bool], is_legal: bool):
+        self.target = target
+        self.actions_per_space = actions_per_space
+        self.beliefs = beliefs_per_space
+        self.observation_available = observation_available
+        self.is_legal = is_legal
+
 # Policy that iterates over actions and select the minimal cost
 # if it's different enough from the cost of a default action
 class ArgminWithEpsilonPolicy:
@@ -14,47 +22,46 @@ class ArgminWithEpsilonPolicy:
         self,
         loss: EpistemicLoss,
         loss_epsilon: float,
-        default_on_illegal: bool,
-        merge_by_min: bool,
+        default_on_illegal: bool
     ):
         self.loss = loss
         self.loss_epsilon = loss_epsilon
         self.default_on_illegal = default_on_illegal
-        self.merge_by_min = merge_by_min
 
     def select(
-        self, beliefs_per_space: list[Beliefs], valid_actions, default_action_index=0
+        self, actions: list[PolicyItem], default_action_index=0
     ):
         # Compute beliefs and loss for each perception space
-        loss_per_space = []
+        losses = []
+        loss_per_space = [] # datatracking variable
 
-        for beliefs in beliefs_per_space:
-            loss_per_space.append(self.loss(beliefs))
+        for action in actions:
+            current_action_losses = []
+            for space_i in range(len(action.beliefs)):
+                if(action.observation_available[space_i]):
+                    space_loss = self.loss([action.beliefs[space_i]])[0]
+                else:
+                    space_loss = 0.0
 
-        # combine losses
-        if self.merge_by_min:
-            losses = np.min(loss_per_space, axis=0)
-        else:
-            losses = np.sum(loss_per_space, axis=0)
+                current_action_losses.append(space_loss)
 
+                # Track loss per space
+                if(len(loss_per_space) <= space_i):
+                    loss_per_space.append([])
+                loss_per_space[space_i].append(space_loss)
+
+            losses.append(np.sum(current_action_losses))
+
+        losses = np.array(losses)
+        loss_per_space = np.array(loss_per_space)
+        
         # Find the best action
         best_action_index = np.argmin(losses, axis=0)
 
-        if not valid_actions[best_action_index]:
-            if self.default_on_illegal:
+        if not actions[best_action_index].is_legal:
+            if self.default_on_illegal or True: # TODO: remove or True, implement the other case
                 # Set the best action to the default action
                 best_action_index = default_action_index
-            else:
-                # Find the best legal action
-                original_indices = np.where(valid_actions)[
-                    0
-                ]  # Keep an array that maps indices of valid_actions to the original indices (including invalid ones)
-                valid_action_index = np.argmin(
-                    losses[valid_actions], axis=0
-                )  # Find the minimal loss among valid actions
-                best_action_index = original_indices[
-                    valid_action_index
-                ]  # Retrieve the original index
 
         # If the best loss is not at least a quantity epsilon away from the default action's loss, the default action is selected
         if best_action_index != default_action_index:

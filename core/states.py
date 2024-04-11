@@ -3,8 +3,9 @@ Some classes to bundle variables together when tracking the results
 """
 
 class ActionState:
-    def __init__(self, id, translation):
+    def __init__(self, id, target, translation):
         self.id = id
+        self.target = target
         self.translation = translation
 
 

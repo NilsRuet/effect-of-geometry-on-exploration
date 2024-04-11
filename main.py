@@ -15,8 +15,8 @@ def generate_exploration_params():
     all_params = []
 
     # Fixed params
-    gamma = 0.5
-    steps = 15
+    gamma = 1
+    steps = 25
     base_norm = 0.1
     initial_prior = 0.1
     acuity_narrowness = 1.5

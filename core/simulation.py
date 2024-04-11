@@ -49,7 +49,7 @@ class Simulation:
             # Step
             policy_state = agent.step(agent_t)
             duration = time.time() - t0
-            Logger.debug(f"execution: ~{int(duration * 1000)}ms")
+            Logger.debug(f"execution: ~{int(duration * 1000)}ms ({params.max_steps - iteration - 1} steps remaining)")
             Logger.debug("-")
 
             # Notify data for the current step
@@ -65,8 +65,6 @@ class Simulation:
         id,
         factory: ProjectiveTransformationFactory,
         initial_translation,
-        initial_eccentricity,
-        initial_distance,
         params: BeliefSpaceParams,
     ):
         angle = GeometryUtils.get_new_frame_rotation_angle(
@@ -103,6 +101,8 @@ class Simulation:
         # The agent starts facing an arbitrary direction (it doesn't matter as the initial beliefs are not updated using an observation)
         initial_position = -initial_translation
         initial_forward = initial_position + np.array((0, 1))
+
+        # TODO : remove and specify rotation instead
         eccentricities = [
             abs(
                 GeometryUtils.get_angle(initial_forward, initial_position, space.target)
@@ -116,18 +116,14 @@ class Simulation:
 
         # Create belief spaces
         belief_spaces = []
-        for i, belief_space_param, initial_eccentricity, initial_distance in zip(
+        for i, belief_space_param in zip(
             range(len(params.beliefs_spaces)),
             params.beliefs_spaces,
-            eccentricities,
-            distances,
         ):
             belief_space = self._init_belief_space(
                 i,
                 factory,
                 initial_translation,
-                initial_eccentricity,
-                initial_distance,
                 belief_space_param,
             )
             belief_spaces.append(belief_space)
@@ -147,8 +143,7 @@ class Simulation:
         policy = ArgminWithEpsilonPolicy(
             loss,
             params.loss_epsilon,
-            params.default_on_illegal,
-            params.merge_loss_by_min,
+            params.default_on_illegal
         )
 
         # Create and run agent

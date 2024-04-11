@@ -27,6 +27,7 @@ class _SimBeliefData:
 class _SimActionData:
     def __init__(self, action: ActionState):
         self.id = int(action.id)
+        self.target = action.target.tolist()
         self.translation = action.translation.tolist()
 
 

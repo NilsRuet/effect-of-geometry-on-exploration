@@ -19,14 +19,11 @@ def main():
 
         # Plot
         fig = plt.figure(figsize=(11, 5))
-        ax1 = fig.add_subplot(221)
-        ax2 = fig.add_subplot(222)
-        ax3 = fig.add_subplot(223)
-        ax4 = fig.add_subplot(224)
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
         plot_traj(deserialized, ax1)
         plot_loss(deserialized, ax2)
-        plot_priors(deserialized, ax3)
-        plot_observation_kernels(deserialized, ax4)
+        # plot_priors(deserialized, ax3)
         plt.show()
 
 
@@ -217,38 +214,6 @@ def _plot_traj(is_euclidean, targets, positions, ax):
     )
     ax.annotate("agent", positions[0] + text_delta)
 
-def plot_observation_kernels(simulation_dictionary, ax):
-    # targets
-    belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
-    space_count = len(belief_spaces)
-
-    steps = simulation_dictionary["steps"]
-
-    epsilon_history = []
-    for i in range(space_count):
-        epsilon_history.append([])
-
-    for step in steps:
-        for i in range(space_count):
-            eps = step["states"][i]["kernel_epsilon"]
-            epsilon_history[i].append(eps)
-
-
-    is_euclidean = simulation_dictionary["params"]["gamma"] == 0
-
-    if is_euclidean:
-        ax.set_title("Kernel epsilon (euclidean)")
-    else:
-        ax.set_title("Kernel epsilon (projective)")
-
-    # plot each loss
-    for i, epsilon in enumerate(epsilon_history):
-        ax.plot(epsilon, label=f"Kernel {i+1} epsilon")
-
-    # Add labels and legend
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Observation kernel epsilon")
-    ax.legend()
 
 
 if __name__ == "__main__":

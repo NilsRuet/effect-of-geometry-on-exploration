@@ -145,30 +145,30 @@ class Translation2DActionSpace:
     def sample(
         self,
         current_frame_transformations: list[ProjectiveTransformation],
-        rotation_targets: list[np.ndarray]
+        space_rotation_targets: list[np.ndarray]
     ):
         # Generate space x action_count actions
-        world_translations = self._generate_world_translations(rotation_targets, current_frame_transformations)
+        world_translations = self._generate_world_translations(current_frame_transformations)
 
         # Apply filter for illegal action
         world_positions = -np.array(world_translations)
-        valid_actions = self.filter(world_positions, rotation_targets)
+        valid_actions = self.filter(world_positions, space_rotation_targets)
 
         # Each translation will be applied in several reference frames
         # because the translations are synchronized, but not the rotations
-        new_actions = self._generate_actions(world_translations, rotation_targets, current_frame_transformations)
+        new_actions = self._generate_actions(world_translations, space_rotation_targets, current_frame_transformations)
 
         # 0 is the index of the idle action (in the first space, arbitrarily)
         return np.array(new_actions), np.int32(0), np.array(world_translations), np.array(valid_actions)
     
-    def _generate_world_translations(self, rotation_targets, current_frame_transformations):
+    def _generate_world_translations(self, current_frame_transformations):
         # Generate angles relative to an object
         angle_delta = 2 * np.pi / self.direction_count
         potential_directions = [(i * angle_delta) for i in range(self.direction_count)]
 
         # Generate action with a translation/rotation for each belief space
         world_translations = []
-        for rotation_target, transformation in zip(rotation_targets, current_frame_transformations):
+        for transformation in current_frame_transformations:
             current_frame_translation = transformation.translation
 
             # Translations can be in any direction
