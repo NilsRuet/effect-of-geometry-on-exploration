@@ -79,7 +79,8 @@ def plot_priors(simulation_dictionary, ax):
         states = step["states"]
         for i in range(space_count):
             cov_matrix = np.array(states[i]["beliefs_cov"])
-            volume = 2 * np.pi * np.sqrt(abs(cov_matrix[0][0])) * np.sqrt(abs(cov_matrix[1][1]))
+            # volume = 2 * np.pi * np.sqrt(abs(cov_matrix[0][0])) * np.sqrt(abs(cov_matrix[1][1]))
+            volume = cov_matrix[0][0] * cov_matrix[1][1] - cov_matrix[0][1] * cov_matrix[1][0]
             priors_cov[i].append(volume)
 
     if is_euclidean:
@@ -89,7 +90,7 @@ def plot_priors(simulation_dictionary, ax):
 
     # plot each loss
     for i, priors in enumerate(priors_cov):
-        ax.plot(priors, label=f"Space {i+1} value")
+        ax.plot(priors, label=f"Volume in space {i+1}")
 
     # Add labels and legend
     ax.set_xlabel("Time")
@@ -203,7 +204,7 @@ def _plot_traj(is_euclidean, targets, positions, ax):
             length_includes_head=True,
             color="gray",
         )
-        ax.text(*arrow[0], f"{i+1}", fontsize=7, color="red")
+        # ax.text(*arrow[0], f"{i+1}", fontsize=7, color="red")
 
     # Agent
     ax.scatter(
@@ -236,9 +237,9 @@ def plot_observation_kernels(simulation_dictionary, ax):
     is_euclidean = simulation_dictionary["params"]["gamma"] == 0
 
     if is_euclidean:
-        ax.set_title("Epistemic value (euclidean)")
+        ax.set_title("Kernel epsilon (euclidean)")
     else:
-        ax.set_title("Epistemic value (projective)")
+        ax.set_title("Kernel epsilon (projective)")
 
     # plot each loss
     for i, epsilon in enumerate(epsilon_history):

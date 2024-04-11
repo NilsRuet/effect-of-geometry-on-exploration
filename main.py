@@ -12,23 +12,25 @@ from itertools import product
 
 
 def generate_exploration_params():
-    steps = 15
     all_params = []
+
+    # Fixed params
+    gamma = 0.5
+    steps = 15
     base_norm = 0.1
-
-    distance = 1
     initial_prior = 0.1
-
-    acuity_coef = 6
+    acuity_narrowness = 1.5
     distance_coef = 0.4
 
-    pos1 = np.array((-2, 1)) * distance
-    pos2 = np.array((0.25, 1)) * distance
+    pos1 = np.array((-1, 1))
+    pos2 = np.array((0.25, 1))
     positions = [pos1, pos2]
 
+    # Grid of variable params
     directions = [8]
     radius_limit = [1.4 * base_norm]
-    kernel_epsilons = [0.05, 0.1, 0.5, 1.0, 2.0]
+    kernel_epsilons = [0.1, 0.5, 1.0, 2.0, 4.0]
+    # kernel_epsilons = [4.0]
     merge_by_min_options = [True]
     idle_on_illegal_illegal_options = [True]
     options = list(
@@ -53,14 +55,14 @@ def generate_exploration_params():
                 target=pos,
                 markov_kernel_epsilon=kernel_epsilon,
                 initial_beliefs_covariance=initial_prior,
-                acuity_coef=acuity_coef,
+                acuity_coef=acuity_narrowness,
                 distance_coef=distance_coef
             )
             for pos in positions
         ]
         all_params.append(
             SimParams(
-                gamma=1,
+                gamma=gamma,
                 direction_count=direction_count,
                 belief_spaces=belief_space_params,
                 max_steps=steps,

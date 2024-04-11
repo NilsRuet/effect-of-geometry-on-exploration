@@ -20,8 +20,7 @@ from utils.rotationutils import RotationUtils
 
 class Simulation:
     def run(self, params: SimParams):
-
-        ## DEBUG
+        ### DEBUG
         # from debug.utils import draw_2D_function, draw_1D_function
         # def get_kernel_epsilon(x, y):
         #     vision_axis = (1, 1)
@@ -36,7 +35,6 @@ class Simulation:
         #         sample_space.distance_coef,
         #     )
         #     return generator(eccentricity, distance).epsilon
-        
         # draw_2D_function(get_kernel_epsilon, [[0, 5], [0, 5]])
         # draw_1D_function(lambda x: get_kernel_epsilon(np.sqrt(x), np.sqrt(x)), [0, 5])
 

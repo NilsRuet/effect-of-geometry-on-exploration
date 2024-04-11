@@ -63,6 +63,7 @@ class Agent:
         best_action_index, losses, loss_per_space = self.policy.select(
             future_beliefs_per_space, valid_actions, idle_action_index
         )
+
         best_moves = actions_per_space[:, best_action_index]
         new_beliefs = future_beliefs_per_space[:, best_action_index]
 
@@ -116,20 +117,25 @@ class Agent:
             # compute distance and eccentricty for each action
             for action_i in range(len(actions)):
                 next_world_position = -world_translations[action_i]
-                eccentricity = abs(
-                    GeometryUtils.get_angle(
-                        next_world_position, current_world_position, obs
+                
+                if(np.linalg.norm(next_world_position - current_world_position) < 0.001):
+                    # In the idle case, there is no movement nor reorientation, so the observation kernel stays the same
+                    # ~= keeping the same orientation
+                    observation_kernels.append(self.spaces[space_i].beliefs.observation_kernel)
+                else:
+                    eccentricity = abs(
+                        GeometryUtils.get_angle(
+                            next_world_position, current_world_position, obs
+                        )
                     )
-                )
-                distance = np.linalg.norm(obs - next_world_position)
-                kernel = space.kernel_generator(eccentricity, distance)
-                observation_kernels.append(kernel)
+                    distance = np.linalg.norm(obs - next_world_position)
+                    kernel = space.kernel_generator(eccentricity, distance)
+                    observation_kernels.append(kernel)
 
             future_beliefs = b.propagate_actions(
                 actions, observation_kernels, f"space {space_i+1}/{space_count}: "
             )
             future_beliefs_per_space.append(future_beliefs)
-
         return np.array(future_beliefs_per_space)
 
     def get_current_frames(self):
