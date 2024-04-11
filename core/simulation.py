@@ -87,17 +87,13 @@ class Simulation:
             params.target
         )
 
-        kernel_generator = self.get_kernel_generator(
-            params.initial_kernel_epsilon, params.acuity_coef, params.distance_coef
-        )
-
         initial_beliefs = Beliefs(
             initial_object_position_internal,
             params.initial_beliefs_covariance * np.identity(2),
-            kernel_generator(initial_eccentricity, initial_distance),
+            MarkovKernel(params.initial_kernel_epsilon)
         )
 
-        return PerceptionSpace(id, frame, world, initial_beliefs, kernel_generator)
+        return PerceptionSpace(id, frame, world, initial_beliefs)
 
     def _init_agent(self, params: SimParams):
         # Start with no translation

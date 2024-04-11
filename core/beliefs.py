@@ -48,12 +48,12 @@ class Beliefs:
     def propagate_actions(
         self,
         actions: List[ProjectiveAction],
-        kernels: list[MarkovKernel],
+        kernel: MarkovKernel,
         log_prefix="",
     ):
         predicted_beliefs = []
         # Integrate the transformed distribution and approximate it by a gaussian distribution
-        for i_action, action, kernel in zip(range(len(actions)), actions, kernels):
+        for i_action, action in enumerate(actions):
             Logger.progress(f"{log_prefix}Action {i_action+1}/{len(actions)}")
             # Skip the integration if the distribution is basically a single point
             if (

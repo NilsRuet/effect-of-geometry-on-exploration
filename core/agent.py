@@ -17,14 +17,12 @@ class PerceptionSpace:
         id,
         reference_frame: ReferenceFrame,
         world: ObjectSensor,
-        initial_beliefs: Beliefs,
-        kernel_generator
+        initial_beliefs: Beliefs
     ):
         self.id = id
         self.reference_frame = reference_frame
         self.world = world
         self.beliefs = initial_beliefs
-        self.kernel_generator = kernel_generator
 
     def observe(self):
         return self.world.observe_position()
@@ -110,30 +108,11 @@ class Agent:
 
         space_count = len(actions_per_space)
         # For each space, plan the effect of actions
-        for space_i, space, b, actions, obs in zip(
-            range(space_count), self.spaces, beliefs, actions_per_space, observations
+        for space_i, b, actions in zip(
+            range(space_count), beliefs, actions_per_space
         ):
-            observation_kernels = []
-            # compute distance and eccentricty for each action
-            for action_i in range(len(actions)):
-                next_world_position = -world_translations[action_i]
-                
-                if(np.linalg.norm(next_world_position - current_world_position) < 0.001):
-                    # In the idle case, there is no movement nor reorientation, so the observation kernel stays the same
-                    # ~= keeping the same orientation
-                    observation_kernels.append(self.spaces[space_i].beliefs.observation_kernel)
-                else:
-                    eccentricity = abs(
-                        GeometryUtils.get_angle(
-                            next_world_position, current_world_position, obs
-                        )
-                    )
-                    distance = np.linalg.norm(obs - next_world_position)
-                    kernel = space.kernel_generator(eccentricity, distance)
-                    observation_kernels.append(kernel)
-
             future_beliefs = b.propagate_actions(
-                actions, observation_kernels, f"space {space_i+1}/{space_count}: "
+                actions, b.observation_kernel, f"space {space_i+1}/{space_count}: "
             )
             future_beliefs_per_space.append(future_beliefs)
         return np.array(future_beliefs_per_space)
