@@ -5,6 +5,7 @@ This script is used to visualize the trajectories of the agent for each sim.
 import os
 import jsonpickle
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import numpy as np
 
 
@@ -37,6 +38,7 @@ def plot_traj(simulation_dictionary, ax):
     # Any one belief state space is ok for this, so we just use the first one (0)
     translations = [s["states"][0]["frame_translation"] for s in steps]
     rotations = [s["states"][0]["frame_rotation"] for s in steps]
+    gaze_targets = [s["policy"]["chosen_action"]["target"] for s in steps]
 
     final_translation = simulation_dictionary["final_state"][0]["frame_translation"]
     final_rotation = simulation_dictionary["final_state"][0]["frame_rotation"]
@@ -56,7 +58,7 @@ def plot_traj(simulation_dictionary, ax):
         positions.append(-translation_world)
     positions = np.array(positions)
 
-    _plot_traj(is_euclidean, targets, positions, ax)
+    _plot_traj(is_euclidean, targets, positions, gaze_targets, ax)
 
 def plot_priors(simulation_dictionary, ax):
     # targets
@@ -108,28 +110,13 @@ def plot_loss(simulation_dictionary, ax):
     steps = simulation_dictionary["steps"]
     is_euclidean = simulation_dictionary["params"]["gamma"] == 0
 
-    # TODO : debug
-    # all_losses = None
-    # init = False
-
     # Select loss evolution
     for step in steps:
         chosen_action = step["policy"]["chosen_action"]["id"]
         loss_per_space = np.array(step["policy"]["loss_per_space"])
 
-        # TODO : debug
-        # if not init:
-        #     init = True
-        #     all_losses = loss_per_space[0]
-        # else:
-        #     all_losses = np.vstack((all_losses, loss_per_space[0]))
-
         for i in range(space_count):
             loss_evolution[i].append(-loss_per_space[i, chosen_action])
-
-    # TODO : debug
-    # for i in range(all_losses.shape[1]):
-    #     ax.plot(all_losses[:,i], label=f"action {i+1}")
 
     if is_euclidean:
         ax.set_title("Epistemic value (euclidean)")
@@ -146,7 +133,7 @@ def plot_loss(simulation_dictionary, ax):
     ax.legend()
 
 
-def _plot_traj(is_euclidean, targets, positions, ax):
+def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax):
     if is_euclidean:
         ax.set_title("Agent movement in the Euclidean case")
     else:
@@ -185,6 +172,11 @@ def _plot_traj(is_euclidean, targets, positions, ax):
         for i in range(len(positions) - 1)
     ]
 
+    cmap = lambda x: cm.viridis(x*0.5 + 0.5)  # You can choose any colormap
+
+    # Generate a gradient of colors
+    colors = [cmap(i/len(arrows)) for i in range(len(arrows))]
+
     for i, arrow in enumerate(arrows):
         # don't draw arrows that are too short
         vect = np.array(arrow[1])
@@ -195,13 +187,31 @@ def _plot_traj(is_euclidean, targets, positions, ax):
         ax.arrow(
             *arrow[0],
             *(arrow[1] * 0.8),
-            head_width=0.04,
-            head_length=0.03,
-            width=0.008,
+            head_width=0.02,
+            head_length=0.01,
+            width=0.005,
             length_includes_head=True,
-            color="gray",
+            color=colors[i],
         )
         # ax.text(*arrow[0], f"{i+1}", fontsize=7, color="red")
+
+    # Rotations
+    normalize = lambda v: 0.05 * v / np.linalg.norm(v)
+    rotation_arrows = [
+        (positions[i], normalize(np.array(gaze_targets[i] - positions[i])))
+        for i in range(len(gaze_targets))
+    ]
+    for i, arrow in enumerate(rotation_arrows):
+        # Arrow for the rotation
+        ax.arrow(
+            *arrow[0],
+            *(arrow[1] * 0.8),
+            head_width=0.01,
+            head_length=0.01,
+            width=0.004,
+            length_includes_head=True,
+            color="black",
+        )
 
     # Agent
     ax.scatter(

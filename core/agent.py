@@ -86,7 +86,7 @@ class Agent:
 
         # Apply policy based on the planned outcomes
         best_action_index, losses, loss_per_space = self.policy.select(
-            all_policy_items, default_actions[0]
+            all_policy_items, default_actions
         )
 
         # Get best action results

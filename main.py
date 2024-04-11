@@ -16,7 +16,7 @@ def generate_exploration_params():
 
     # Fixed params
     gamma = 1
-    steps = 25
+    steps = 35
     base_norm = 0.1
     initial_prior = 0.1
     acuity_narrowness = 1.5
@@ -28,17 +28,17 @@ def generate_exploration_params():
 
     # Grid of variable params
     directions = [8]
-    radius_limit = [1.4 * base_norm]
+    radius_limit = [2 * base_norm]
     kernel_epsilons = [0.1, 0.5, 1.0, 2.0, 4.0]
     # kernel_epsilons = [4.0]
     merge_by_min_options = [True]
-    idle_on_illegal_illegal_options = [True]
+    idle_on_illegal = [False]
     options = list(
         product(
             directions,
             kernel_epsilons,
             merge_by_min_options,
-            idle_on_illegal_illegal_options,
+            idle_on_illegal,
             radius_limit,
         )
     )
