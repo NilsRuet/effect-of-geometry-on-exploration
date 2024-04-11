@@ -145,16 +145,30 @@ class Translation2DActionSpace:
     def sample(
         self,
         current_frame_transformations: list[ProjectiveTransformation],
-        observations: list[np.ndarray]
+        rotation_targets: list[np.ndarray]
     ):
+        # Generate space x action_count actions
+        world_translations = self._generate_world_translations(rotation_targets, current_frame_transformations)
+
+        # Apply filter for illegal action
+        world_positions = -np.array(world_translations)
+        valid_actions = self.filter(world_positions, rotation_targets)
+
+        # Each translation will be applied in several reference frames
+        # because the translations are synchronized, but not the rotations
+        new_actions = self._generate_actions(world_translations, rotation_targets, current_frame_transformations)
+
+        # 0 is the index of the idle action (in the first space, arbitrarily)
+        return np.array(new_actions), np.int32(0), np.array(world_translations), np.array(valid_actions)
+    
+    def _generate_world_translations(self, rotation_targets, current_frame_transformations):
         # Generate angles relative to an object
         angle_delta = 2 * np.pi / self.direction_count
         potential_directions = [(i * angle_delta) for i in range(self.direction_count)]
 
         # Generate action with a translation/rotation for each belief space
         world_translations = []
-        rotations = []
-        for observation, transformation in zip(observations, current_frame_transformations):
+        for rotation_target, transformation in zip(rotation_targets, current_frame_transformations):
             current_frame_translation = transformation.translation
 
             # Translations can be in any direction
@@ -164,6 +178,9 @@ class Translation2DActionSpace:
                 for angle in potential_directions
             ]
 
+            # Add the identity translation at the beginning
+            local_translations.insert(0, current_frame_translation)
+
             # Convert local translations into world translations
             current_world_translations = [
                 np.matmul(transformation.inverse_linear_map, t)
@@ -171,23 +188,15 @@ class Translation2DActionSpace:
             ]
             world_translations.extend(current_world_translations)
 
-        # Add the identity translation at the beginning
-        single_transform = current_frame_transformations[0]
-        idle_transform = np.matmul(single_transform.inverse_linear_map, single_transform.translation)
-        world_translations.insert(0, idle_transform)
-
-        # Apply filter for illegal action
-        world_positions = -np.array(world_translations)
-        valid_actions = self.filter(world_positions, observations)
-
-        # Each translation will be applied in several reference frames
-        # because the translations are synchronized, but not the rotations
+        return world_translations
+    
+    def _generate_actions(self, world_translations, rotation_targets, current_frame_transformations):
         new_actions = []
-        for frame_transformation, observation in zip(current_frame_transformations, observations):
+        for frame_transformation, rotation_target in zip(current_frame_transformations, rotation_targets):
             # Generate new rotations for each new translation
             angles = [
                 GeometryUtils.get_new_frame_rotation_angle(
-                    self.agent_starting_position, translation, observation
+                    self.agent_starting_position, translation, rotation_target
                 )
                 for translation in world_translations
             ]
@@ -214,6 +223,4 @@ class Translation2DActionSpace:
                 ]
             )
             new_actions.append(actions)
-
-        # 0 is the index of the idle action
-        return np.array(new_actions), np.int32(0), np.array(world_translations), np.array(valid_actions)
+        return new_actions
