@@ -13,28 +13,34 @@ from itertools import product
 
 def generate_exploration_params():
     all_params = []
+    # For resuming an interrupted iteration
+    start_after = 37
+
 
     # Fixed params
-    gamma = 1
     steps = 35
     base_norm = 0.1
-    initial_prior = 0.1
+    initial_prior = 0.01
+    # This is irrelevant in this version
     acuity_narrowness = 1.5
     distance_coef = 0.4
 
-    pos1 = np.array((-1, 1))
-    pos2 = np.array((0.25, 1))
+    pos1 = np.array((-0.5, 0.75))
+    pos2 = np.array((0.5, 0.75))
     positions = [pos1, pos2]
 
     # Grid of variable params
+    gammas = [0,0.1,0.25,0.5,0.75,1] # 0.1 step
+    kernel_epsilons = [0.1, 0.25, 0.5, 0.75, 1.0] # 0.1 step
+    # gammas = [0.5]
     directions = [8]
-    radius_limit = [2 * base_norm]
-    kernel_epsilons = [0.1, 0.5, 1.0, 2.0, 4.0]
-    # kernel_epsilons = [4.0]
+    radius_limit = [1.5 * base_norm]
+    # kernel_epsilons = [3.5]
     merge_by_min_options = [True]
-    idle_on_illegal = [False]
+    idle_on_illegal = [True]
     options = list(
         product(
+            gammas,
             directions,
             kernel_epsilons,
             merge_by_min_options,
@@ -44,6 +50,7 @@ def generate_exploration_params():
     )
 
     for (
+        gamma,
         direction_count,
         kernel_epsilon,
         merge_by_min,
@@ -73,7 +80,7 @@ def generate_exploration_params():
             )
         )
 
-    return all_params
+    return all_params[start_after:], start_after
 
 
 # Generate params for sims with a single object located at evenly distributed angles
@@ -162,10 +169,11 @@ def generate_grid_params():
 
 
 def main():
-    all_params = generate_exploration_params()
+    all_params, start_after = generate_exploration_params()
+    dataManager.set_count(start_after) # start_at is indexed from 0
     sim = Simulation()
     for i, params in enumerate(all_params):
-        Logger.debug(f"### Sim {i+1} ###")
+        Logger.debug(f"### Sim {i+start_after+1} ###")
         # dataManager records and write simulation data
         dataManager.notify_new_sim(params)
         t0 = time.time()

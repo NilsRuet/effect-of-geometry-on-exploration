@@ -100,8 +100,6 @@ class Agent:
 
         # For data tracking
         best_world_translation = world_translations[translation_indices[best_action_index]]
-        # TODO :
-        # - record rotations
         action_state = ActionState(
             best_action_index, best_action.target, best_world_translation 
         )
@@ -126,6 +124,10 @@ class Agent:
 
             # Update prior based on observation
             if(is_visible):
+                # TODO : 
+                # Remove "is visible"
+                # Observations become gaussians
+                # Update using integration
                 local_observation = space.reference_frame.world_to_local(observation)
                 space.beliefs.update(local_observation)
 

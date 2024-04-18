@@ -75,6 +75,9 @@ class SimDataManager:
         self.sim_folder = "./sims/"
         self.count = 0
 
+    def set_count(self, count):
+        self.count = count
+
     def set_sim_folder(self, path):
         self.sim_folder = path
 

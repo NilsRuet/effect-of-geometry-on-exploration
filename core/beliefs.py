@@ -68,7 +68,9 @@ class Beliefs:
                 mean = self._integrate_mean(action, *bounds)
                 covariance = self._integrate_covariance(action, mean, *bounds)
 
+            
             predicted_beliefs.append(Beliefs(mean, covariance, kernel))
+
 
         return np.array(predicted_beliefs)
 
@@ -167,6 +169,7 @@ class Beliefs:
         x2 = max(bounds_points, key=lambda p: p[0])[0]
         lambda_y1 = lambda x: GeometryUtils.find_intersections(bounds_points, x)[0]
         lambda_y2 = lambda x: GeometryUtils.find_intersections(bounds_points, x)[1]
+
         return x1, x2, lambda_y1, lambda_y2
 
     # Function that is integrated to compute the mean

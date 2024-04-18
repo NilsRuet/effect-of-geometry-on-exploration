@@ -3,6 +3,22 @@ from matplotlib.ticker import ScalarFormatter
 import math
 import numpy as np
 
+def plot_lines(coord_pairs):
+    """
+    Plot lines between given points.
+
+    Args:
+    coord_pairs (list of tuples): List of coordinate pairs.
+                                   Each tuple should contain (x, y) coordinates.
+    """
+    x_coords, y_coords = zip(*coord_pairs)
+    plt.plot(x_coords, y_coords)
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+    plt.title('Plot of Lines between Given Points')
+    plt.grid(True)
+    plt.show()
+    
 def draw_vectors(vectors):
     """
     Draw vectors using Matplotlib.

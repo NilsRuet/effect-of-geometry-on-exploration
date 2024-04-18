@@ -19,6 +19,9 @@ def main():
             deserialized = jsonpickle.decode(content)
 
         # Plot
+        gamma =deserialized["params"]["gamma"]
+        epsilon = deserialized["params"]["beliefs_spaces"][0]["initial_kernel_epsilon"]
+ 
         fig = plt.figure(figsize=(11, 5))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
@@ -108,7 +111,8 @@ def plot_loss(simulation_dictionary, ax):
         loss_evolution.append([])
 
     steps = simulation_dictionary["steps"]
-    is_euclidean = simulation_dictionary["params"]["gamma"] == 0
+    gamma = simulation_dictionary["params"]["gamma"]
+    epsilon = simulation_dictionary["params"]["beliefs_spaces"][0]["initial_kernel_epsilon"]
 
     # Select loss evolution
     for step in steps:
@@ -118,10 +122,7 @@ def plot_loss(simulation_dictionary, ax):
         for i in range(space_count):
             loss_evolution[i].append(-loss_per_space[i, chosen_action])
 
-    if is_euclidean:
-        ax.set_title("Epistemic value (euclidean)")
-    else:
-        ax.set_title("Epistemic value (projective)")
+    ax.set_title(f"Epistemic value gamma={gamma} epsilon={epsilon}")
 
     # plot each loss
     for i, loss_history in enumerate(loss_evolution):
