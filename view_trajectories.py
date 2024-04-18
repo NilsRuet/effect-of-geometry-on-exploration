@@ -19,8 +19,8 @@ def main():
             deserialized = jsonpickle.decode(content)
 
         # Plot
-        gamma =deserialized["params"]["gamma"]
-        epsilon = deserialized["params"]["beliefs_spaces"][0]["initial_kernel_epsilon"]
+        # gamma = deserialized["params"]["gamma"]
+        # epsilon = deserialized["params"]["beliefs_spaces"][0]["initial_kernel_epsilon"]
  
         fig = plt.figure(figsize=(11, 5))
         ax1 = fig.add_subplot(121)

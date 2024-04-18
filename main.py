@@ -14,28 +14,23 @@ from itertools import product
 def generate_exploration_params():
     all_params = []
     # For resuming an interrupted iteration
-    start_after = 37
+    start_after = 0
 
 
     # Fixed params
-    steps = 35
+    steps = 40
     base_norm = 0.1
     initial_prior = 0.01
-    # This is irrelevant in this version
-    acuity_narrowness = 1.5
-    distance_coef = 0.4
 
     pos1 = np.array((-0.5, 0.75))
     pos2 = np.array((0.5, 0.75))
     positions = [pos1, pos2]
 
     # Grid of variable params
-    gammas = [0,0.1,0.25,0.5,0.75,1] # 0.1 step
-    kernel_epsilons = [0.1, 0.25, 0.5, 0.75, 1.0] # 0.1 step
-    # gammas = [0.5]
+    gammas = np.array(range(10,-1,-1)) * 0.1 # [0.0 - 1.0]
+    kernel_epsilons = np.array(range(10,0,-1)) * 0.1 # [0.1 - 1.0]
     directions = [8]
     radius_limit = [1.5 * base_norm]
-    # kernel_epsilons = [3.5]
     merge_by_min_options = [True]
     idle_on_illegal = [True]
     options = list(
@@ -60,16 +55,14 @@ def generate_exploration_params():
         belief_space_params = [
             BeliefSpaceParams(
                 target=pos,
-                markov_kernel_epsilon=kernel_epsilon,
-                initial_beliefs_covariance=initial_prior,
-                acuity_coef=acuity_narrowness,
-                distance_coef=distance_coef
+                markov_kernel_epsilon=float(kernel_epsilon),
+                initial_beliefs_covariance=initial_prior
             )
             for pos in positions
         ]
         all_params.append(
             SimParams(
-                gamma=gamma,
+                gamma=float(gamma),
                 direction_count=direction_count,
                 belief_spaces=belief_space_params,
                 max_steps=steps,
