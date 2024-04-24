@@ -8,11 +8,23 @@ import numpy as np
 
 
 class BehaviorData:
-    def __init__(self, gamma, epsilon, min_distances, focus_switch_count):
+    def __init__(
+        self,
+        gamma,
+        epsilon,
+        min_distances,
+        min_distance_indices,
+        focus_switch_count,
+        attention_switch_count,
+        cumulated_epistemic_value,
+    ):
         self.gamma = gamma
         self.epsilon = epsilon
         self.min_distances = min_distances
+        self.min_distance_indices = min_distance_indices
         self.focus_switch_count = focus_switch_count
+        self.attention_switch_count = attention_switch_count
+        self.cumulated_epistemic_value = cumulated_epistemic_value
 
 
 def main():
@@ -27,23 +39,62 @@ def main():
             bhv_data = get_behavior(deserialized)
             data_grid.append(bhv_data)
 
-        # ax2 = fig.add_subplot(122)
-        # plot_traj(deserialized, ax1)
-        # plot_loss(deserialized, ax2)
-
     fig = plt.figure(figsize=(11, 5))
-    ax1 = fig.add_subplot(121)
-    plot_switch_grid(data_grid, ax1)
+    ax1 = fig.add_subplot(221)
+    ax2 = fig.add_subplot(222)
+    ax3 = fig.add_subplot(223)
+    ax4 = fig.add_subplot(224)
+    fig.tight_layout()
+    plot_behavior_grid(
+        data_grid,
+        ax1,
+        lambda d: min(d.min_distance_indices),
+        "Steps to reach minimal distance to most approached object",
+        "Steps",
+    )
+    plot_behavior_grid(
+        data_grid,
+        ax2,
+        lambda d: d.attention_switch_count,
+        "Rotation changes over 40 steps",
+        "Rotation changes",
+    )
+    # plot_behavior_grid(
+    #     data_grid,
+    #     ax3,
+    #     lambda d: min(d.min_distances),
+    #     "Minimal distance to the most approached object",
+    #     "distance",
+    # )
+    plot_behavior_grid(
+        data_grid,
+        ax3,
+        lambda d: d.cumulated_epistemic_value,
+        "Cumulated epistemic value",
+        "Epistemic value",
+    )
+    plot_behavior_grid(
+        data_grid,
+        ax4,
+        lambda d: max(d.min_distances),
+        "Minimal distance to the least approached object",
+        "distance",
+    )
+
     plt.show()
 
 
-def plot_switch_grid(data_grid: list[BehaviorData], ax):
-    gamma_values = [d.gamma for d in data_grid]
-    epsilon_values = [d.epsilon for d in data_grid]
-    switch_values = [d.focus_switch_count for d in data_grid]
+def plot_behavior_grid(
+    data_grid: list[BehaviorData], ax, value_getter, title, value_label
+):
+    filtered_data_grid = [d for d in data_grid if d.gamma >= 0]
+
+    gamma_values = [d.gamma for d in filtered_data_grid]
+    epsilon_values = [d.epsilon for d in filtered_data_grid]
+    values = [value_getter(d) for d in filtered_data_grid]
 
     # Define grid for interpolation
-    gamma_value_count = 10
+    gamma_value_count = 9
     epsilon_value_count = 9
     epsilon_step = 0.1
     gamma_step = 0.1
@@ -57,13 +108,11 @@ def plot_switch_grid(data_grid: list[BehaviorData], ax):
     xi, yi = np.meshgrid(xi, yi)
 
     # Interpolate k values
-    zi = griddata(
-        (gamma_values, epsilon_values), switch_values, (xi, yi), method="nearest"
-    )
+    zi = griddata((gamma_values, epsilon_values), values, (xi, yi), method="nearest")
 
     # Create the colormap plot
-    cmap = plt.get_cmap('Greys')
-    norm = Normalize(vmin=min(switch_values), vmax=max(switch_values))
+    cmap = plt.get_cmap("Greys_r")
+    norm = Normalize(vmin=min(values), vmax=max(values))
     im = ax.imshow(
         zi,
         extent=(gamma_min_plot, gamma_max_plot, epsilon_min_plot, epsilon_max_plot),
@@ -73,9 +122,9 @@ def plot_switch_grid(data_grid: list[BehaviorData], ax):
     )
     ax.set_xlabel("gamma")
     ax.set_ylabel("epsilon")
-    ax.set_title("Attention swaps for the first 40 steps")
-    plt.colorbar(im, ax=ax, label="k")  # Add a colorbar with label
+    plt.colorbar(im, ax=ax, label=value_label)
     ax.set_aspect("equal")
+    ax.set_title(title)
 
 
 def get_behavior(simulation):
@@ -102,6 +151,7 @@ def get_behavior(simulation):
     difference = targets_reshaped - positions_reshaped  # subtract via broadcasting
     distances = np.linalg.norm(difference, axis=-1)  # compute norm for each difference
 
+    # target indices
     target_indices = []
     for i in range(len(distances) - 1):
         dist_before = distances[i]
@@ -115,15 +165,42 @@ def get_behavior(simulation):
             target_index = np.argmin(target_dist_diff)
             target_indices.append(target_index)
 
+    # Rotation targets
+    rotation_targets = np.array(
+        [step["policy"]["chosen_action"]["target"] for step in steps]
+    )
+    rotation_switch_count = count_changes(
+        rotation_targets, lambda p, p2: (p == p2).all()
+    )
+
+    # Cumulated epistemic value
+    cumulative_epistemic_value = np.zeros(len(belief_spaces))
+    for step in steps:
+        chosen_action = step["policy"]["chosen_action"]["id"]
+        cumulative_epistemic_value -= np.array(step["policy"]["loss_per_space"])[:,chosen_action]
     switch_count = count_changes(target_indices)
     min_distances = np.min(distances, axis=0)
-    return BehaviorData(gamma, epsilon, min_distances, switch_count)
+    min_distance_indices = np.argmin(distances, axis=0)
+
+    threshold = 0.25
+    return BehaviorData(
+        gamma,
+        epsilon,
+        min_distances,
+        min_distance_indices,
+        switch_count,
+        rotation_switch_count,
+        sum(cumulative_epistemic_value)
+    )
 
 
-def count_changes(sequence):
+def count_changes(sequence, equal_function=None):
+    if equal_function == None:
+        equal_function = lambda x, y: x == y
+
     count = 0
     for i in range(len(sequence) - 1):
-        if sequence[i] != sequence[i + 1]:
+        if not equal_function(sequence[i], sequence[i + 1]):
             count += 1
     return count
 
