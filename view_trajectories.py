@@ -18,20 +18,20 @@ def main():
             content = file.read()
             deserialized = jsonpickle.decode(content)
 
-        # Plot
+        # # Plot
         # gamma = deserialized["params"]["gamma"]
         # epsilon = deserialized["params"]["beliefs_spaces"][0]["initial_kernel_epsilon"]
- 
+
         fig = plt.figure(figsize=(11, 5))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
-        plot_traj(deserialized, ax1)
-        plot_loss(deserialized, ax2)
-        # plot_priors(deserialized, ax3)
+        target_colors = [(0, 0, 0), (0.5, 0.5, 0.5)]
+        plot_traj(deserialized, ax1, target_colors)
+        plot_loss(deserialized, ax2, target_colors)
         plt.show()
 
 
-def plot_traj(simulation_dictionary, ax):
+def plot_traj(simulation_dictionary, ax, target_colors):
     # targets
     belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
     targets = [space["target"]["values"] for space in belief_spaces]
@@ -61,7 +61,8 @@ def plot_traj(simulation_dictionary, ax):
         positions.append(-translation_world)
     positions = np.array(positions)
 
-    _plot_traj(is_euclidean, targets, positions, gaze_targets, ax)
+    _plot_traj(is_euclidean, targets, positions, gaze_targets, ax, target_colors)
+
 
 def plot_priors(simulation_dictionary, ax):
     # targets
@@ -82,7 +83,10 @@ def plot_priors(simulation_dictionary, ax):
         for i in range(space_count):
             cov_matrix = np.array(states[i]["beliefs_cov"])
             # volume = 2 * np.pi * np.sqrt(abs(cov_matrix[0][0])) * np.sqrt(abs(cov_matrix[1][1]))
-            volume = cov_matrix[0][0] * cov_matrix[1][1] - cov_matrix[0][1] * cov_matrix[1][0]
+            volume = (
+                cov_matrix[0][0] * cov_matrix[1][1]
+                - cov_matrix[0][1] * cov_matrix[1][0]
+            )
             priors_cov[i].append(volume)
 
     if is_euclidean:
@@ -100,7 +104,7 @@ def plot_priors(simulation_dictionary, ax):
     ax.legend()
 
 
-def plot_loss(simulation_dictionary, ax):
+def plot_loss(simulation_dictionary, ax, target_colors):
     # targets
     belief_spaces = simulation_dictionary["params"]["beliefs_spaces"]
     space_count = len(belief_spaces)
@@ -112,7 +116,9 @@ def plot_loss(simulation_dictionary, ax):
 
     steps = simulation_dictionary["steps"]
     gamma = simulation_dictionary["params"]["gamma"]
-    epsilon = simulation_dictionary["params"]["beliefs_spaces"][0]["initial_kernel_epsilon"]
+    epsilon = simulation_dictionary["params"]["beliefs_spaces"][0][
+        "initial_kernel_epsilon"
+    ]
 
     # Select loss evolution
     for step in steps:
@@ -122,11 +128,11 @@ def plot_loss(simulation_dictionary, ax):
         for i in range(space_count):
             loss_evolution[i].append(-loss_per_space[i, chosen_action])
 
-    ax.set_title(f"Epistemic value gamma={gamma} epsilon={epsilon}")
+    ax.set_title("Epistemic value of chosen action (γ={:.1f} ε={:.1f})".format(gamma, epsilon))
 
     # plot each loss
     for i, loss_history in enumerate(loss_evolution):
-        ax.plot(loss_history, label=f"target {i+1} value")
+        ax.plot(loss_history, label=f"Object {i+1}", color=target_colors[i])
 
     # Add labels and legend
     ax.set_xlabel("Time")
@@ -134,11 +140,11 @@ def plot_loss(simulation_dictionary, ax):
     ax.legend()
 
 
-def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax):
+def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax, target_colors):
     if is_euclidean:
-        ax.set_title("Agent movement in the Euclidean case")
+        ax.set_title("Euclidean case")
     else:
-        ax.set_title("Agent movement in the projective case")
+        ax.set_title("Projective case")
 
     ax.tick_params(bottom=False, left=False)
     ax.spines["top"].set_visible(False)
@@ -154,18 +160,17 @@ def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax):
 
     ax.set_axisbelow(True)
 
-    text_delta = np.array((0.05, 0))
-
     # targets
     for i_target, target in enumerate(targets):
         ax.scatter(
             target[0],
             target[1],
-            facecolors="black",
+            facecolors=target_colors[i_target],
             edgecolors="black",
-            linewidths=1,
+            linewidths=0.5,
+            s=150,
         )
-        ax.annotate(f"object {i_target+1}", target + text_delta)
+        ax.annotate(f"Object {i_target+1}", target + np.array((-0.05, 0.05)))
 
     # Translations
     arrows = [
@@ -173,10 +178,10 @@ def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax):
         for i in range(len(positions) - 1)
     ]
 
-    cmap = lambda x: cm.viridis(x*0.5 + 0.5)  # You can choose any colormap
+    cmap = lambda x: cm.viridis(x * 0.5 + 0.5)  # You can choose any colormap
 
     # Generate a gradient of colors
-    colors = [cmap(i/len(arrows)) for i in range(len(arrows))]
+    colors = [cmap(i / len(arrows)) for i in range(len(arrows))]
 
     for i, arrow in enumerate(arrows):
         # don't draw arrows that are too short
@@ -192,9 +197,8 @@ def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax):
             head_length=0.01,
             width=0.005,
             length_includes_head=True,
-            color=colors[i],
+            color=(0,0,0),
         )
-        # ax.text(*arrow[0], f"{i+1}", fontsize=7, color="red")
 
     # Rotations
     normalize = lambda v: 0.05 * v / np.linalg.norm(v)
@@ -209,9 +213,9 @@ def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax):
             *(arrow[1] * 0.8),
             head_width=0.01,
             head_length=0.01,
-            width=0.004,
+            width=0.005,
             length_includes_head=True,
-            color="black",
+            color=(0.7,0.7,0.7)
         )
 
     # Agent
@@ -223,8 +227,7 @@ def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax):
         linewidths=1,
         marker="s",
     )
-    ax.annotate("agent", positions[0] + text_delta)
-
+    ax.annotate("Agent", positions[0] + np.array((0.05, 0)))
 
 
 if __name__ == "__main__":

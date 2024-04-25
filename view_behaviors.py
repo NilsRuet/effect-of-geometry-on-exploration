@@ -2,7 +2,7 @@ import os
 import jsonpickle
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, BoundaryNorm
 from scipy.interpolate import griddata
 import numpy as np
 
@@ -17,6 +17,7 @@ class BehaviorData:
         focus_switch_count,
         attention_switch_count,
         cumulated_epistemic_value,
+        reached_targets
     ):
         self.gamma = gamma
         self.epsilon = epsilon
@@ -25,6 +26,7 @@ class BehaviorData:
         self.focus_switch_count = focus_switch_count
         self.attention_switch_count = attention_switch_count
         self.cumulated_epistemic_value = cumulated_epistemic_value
+        self.targets_reached = reached_targets
 
 
 def main():
@@ -40,52 +42,30 @@ def main():
             data_grid.append(bhv_data)
 
     fig = plt.figure(figsize=(11, 5))
-    ax1 = fig.add_subplot(221)
-    ax2 = fig.add_subplot(222)
-    ax3 = fig.add_subplot(223)
-    ax4 = fig.add_subplot(224)
-    fig.tight_layout()
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
+    # fig.tight_layout()
     plot_behavior_grid(
         data_grid,
         ax1,
-        lambda d: min(d.min_distance_indices),
-        "Steps to reach minimal distance to most approached object",
-        "Steps",
+        lambda d: d.attention_switch_count,
+        "Swaps of observed object",
+        "Count",
     )
     plot_behavior_grid(
         data_grid,
         ax2,
-        lambda d: d.attention_switch_count,
-        "Rotation changes over 40 steps",
-        "Rotation changes",
-    )
-    # plot_behavior_grid(
-    #     data_grid,
-    #     ax3,
-    #     lambda d: min(d.min_distances),
-    #     "Minimal distance to the most approached object",
-    #     "distance",
-    # )
-    plot_behavior_grid(
-        data_grid,
-        ax3,
-        lambda d: d.cumulated_epistemic_value,
-        "Cumulated epistemic value",
-        "Epistemic value",
-    )
-    plot_behavior_grid(
-        data_grid,
-        ax4,
-        lambda d: max(d.min_distances),
-        "Minimal distance to the least approached object",
-        "distance",
+        lambda d: d.targets_reached,
+        "Objects reached",
+        "Count",
+        discrete=True
     )
 
     plt.show()
 
 
 def plot_behavior_grid(
-    data_grid: list[BehaviorData], ax, value_getter, title, value_label
+    data_grid: list[BehaviorData], ax, value_getter, title, value_label, discrete = False
 ):
     filtered_data_grid = [d for d in data_grid if d.gamma >= 0]
 
@@ -94,7 +74,7 @@ def plot_behavior_grid(
     values = [value_getter(d) for d in filtered_data_grid]
 
     # Define grid for interpolation
-    gamma_value_count = 9
+    gamma_value_count = 10
     epsilon_value_count = 9
     epsilon_step = 0.1
     gamma_step = 0.1
@@ -112,7 +92,17 @@ def plot_behavior_grid(
 
     # Create the colormap plot
     cmap = plt.get_cmap("Greys_r")
-    norm = Normalize(vmin=min(values), vmax=max(values))
+
+    # Value bounds (discrete case)
+    max_value = max(values)
+    min_value = min(values)
+    number_of_values = max_value - min_value + 1
+    
+    if not discrete:
+        norm = Normalize(vmin=min(values), vmax=max(values))
+    else:
+        norm = BoundaryNorm(np.linspace(min_value-0.5, max_value+0.5,  number_of_values + 1), cmap.N)
+
     im = ax.imshow(
         zi,
         extent=(gamma_min_plot, gamma_max_plot, epsilon_min_plot, epsilon_max_plot),
@@ -120,9 +110,13 @@ def plot_behavior_grid(
         cmap=cmap,
         norm=norm,
     )
-    ax.set_xlabel("gamma")
-    ax.set_ylabel("epsilon")
-    plt.colorbar(im, ax=ax, label=value_label)
+    ax.set_xlabel("γ", fontsize=16)
+    ax.set_ylabel("ε",  fontsize=16)
+    if not discrete:
+        plt.colorbar(im, ax=ax, label=value_label)
+    else:
+        plt.colorbar(im, ax=ax, label=value_label, ticks=np.arange(min_value, max_value+1))
+
     ax.set_aspect("equal")
     ax.set_title(title)
 
@@ -131,6 +125,7 @@ def get_behavior(simulation):
     steps = simulation["steps"]
     gamma = simulation["params"]["gamma"]
     translation_norm = simulation["params"]["norm_of_translations"]
+    illegal_radius = simulation["params"]["distance_filter"]
     epsilon = simulation["params"]["beliefs_spaces"][0][
         "initial_kernel_epsilon"
     ]  # both have the same epsilon
@@ -173,6 +168,14 @@ def get_behavior(simulation):
         rotation_targets, lambda p, p2: (p == p2).all()
     )
 
+    # Classify wether the agent is near a target
+    near_target_radius = illegal_radius + translation_norm
+    close_targets_per_step = distances < near_target_radius
+    reached_count = 0
+    for i in range(len(targets)):
+        # Count how many times each target became close
+        reached_count += count_set_to_true(close_targets_per_step[:, i])
+
     # Cumulated epistemic value
     cumulative_epistemic_value = np.zeros(len(belief_spaces))
     for step in steps:
@@ -190,7 +193,8 @@ def get_behavior(simulation):
         min_distance_indices,
         switch_count,
         rotation_switch_count,
-        sum(cumulative_epistemic_value)
+        sum(cumulative_epistemic_value),
+        reached_count
     )
 
 
@@ -201,6 +205,16 @@ def count_changes(sequence, equal_function=None):
     count = 0
     for i in range(len(sequence) - 1):
         if not equal_function(sequence[i], sequence[i + 1]):
+            count += 1
+    return count
+
+def count_set_to_true(sequence: list[bool]):
+    count = 0
+    if(sequence[0] == True):
+        count += 1
+
+    for i in range(len(sequence) - 1):
+        if sequence[i] == False and sequence[i+1] == True :
             count += 1
     return count
 
