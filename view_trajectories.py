@@ -18,9 +18,9 @@ def main():
             content = file.read()
             deserialized = jsonpickle.decode(content)
 
-        # # Plot
-        # gamma = deserialized["params"]["gamma"]
-        # epsilon = deserialized["params"]["beliefs_spaces"][0]["initial_kernel_epsilon"]
+        # Plot
+        gamma = deserialized["params"]["gamma"]
+        epsilon = deserialized["params"]["beliefs_spaces"][0]["initial_kernel_epsilon"]
 
         fig = plt.figure(figsize=(11, 5))
         ax1 = fig.add_subplot(121)
@@ -29,7 +29,6 @@ def main():
         plot_traj(deserialized, ax1, target_colors)
         plot_loss(deserialized, ax2, target_colors)
         plt.show()
-
 
 def plot_traj(simulation_dictionary, ax, target_colors):
     # targets
@@ -201,22 +200,22 @@ def _plot_traj(is_euclidean, targets, positions, gaze_targets, ax, target_colors
         )
 
     # Rotations
-    normalize = lambda v: 0.05 * v / np.linalg.norm(v)
-    rotation_arrows = [
-        (positions[i], normalize(np.array(gaze_targets[i] - positions[i])))
-        for i in range(len(gaze_targets))
-    ]
-    for i, arrow in enumerate(rotation_arrows):
-        # Arrow for the rotation
-        ax.arrow(
-            *arrow[0],
-            *(arrow[1] * 0.8),
-            head_width=0.01,
-            head_length=0.01,
-            width=0.005,
-            length_includes_head=True,
-            color=(0.7,0.7,0.7)
-        )
+    # normalize = lambda v: 0.05 * v / np.linalg.norm(v)
+    # rotation_arrows = [
+    #     (positions[i], normalize(np.array(gaze_targets[i] - positions[i])))
+    #     for i in range(len(gaze_targets))
+    # ]
+    # for i, arrow in enumerate(rotation_arrows):
+    #     # Arrow for the rotation
+    #     ax.arrow(
+    #         *arrow[0],
+    #         *(arrow[1] * 0.8),
+    #         head_width=0.01,
+    #         head_length=0.01,
+    #         width=0.005,
+    #         length_includes_head=True,
+    #         color=(0.7,0.7,0.7)
+    #     )
 
     # Agent
     ax.scatter(

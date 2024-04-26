@@ -49,14 +49,14 @@ def main():
         data_grid,
         ax1,
         lambda d: d.attention_switch_count,
-        "Swaps of observed object",
+        "Swaps of observed object over 40 steps",
         "Count",
     )
     plot_behavior_grid(
         data_grid,
         ax2,
         lambda d: d.targets_reached,
-        "Objects reached",
+        "Objects reached in 40 steps",
         "Count",
         discrete=True
     )
