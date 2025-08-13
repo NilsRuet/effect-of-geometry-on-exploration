@@ -1,6 +1,7 @@
 # Effect of Euclidean vs Projective geometry on curiosity based exploration
 
-This project is an implementation exhibiting the effect of Euclidean vs Projective geometry on curiosity based exploration.
+This project is an implementation exhibiting the effect of Euclidean vs Projective geometry on curiosity based exploration ([Sergeant-Perthuis, Ruet, Ognibene, Tisserand, Williford, Rudrauf, 2025](https://link.springer.com/article/10.1007/s00422-024-01001-1)).
+
 The setup of each simulation is an agent and an object, both represented as points in the 2D euclidean space. The agent holds beliefs about the position of the object in its internal space, which is either Euclidean or Projective. The agent selects a translation at each step based on the information gained (epistemic value) through each action.
 
 
@@ -25,3 +26,4 @@ The results of the simulation can be visualized with several commands :
 - `python view_losse_ranges.py` will display the min, max and average loss range (difference between best and worst action) per simulation.
 
 
+1
